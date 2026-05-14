@@ -10,14 +10,14 @@ const CONFIG = {
     // Default: "admin123" (SHA-256 hashed below)
     // To change: go to https://emn178.github.io/online-tools/sha256.html
     // Type your password, copy the hash, paste it here
-    PASSWORD_HASH: '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
+    PASSWORD_HASH: 'a7c777ee10c0cd8b00e50b89b38c384d1fe0c09928a82934edbeb8774b4ddc1a',
 
     // --- GitHub Repository (for publishing data) ---
-    GITHUB_OWNER: 'YOUR_GITHUB_USERNAME',
-    GITHUB_REPO: 'YOUR_REPO_NAME',
+    GITHUB_OWNER: 'vaguevault76-ctrl',
+    GITHUB_REPO: 'callanix-apps-store',
 
     // --- Raw Data URL for User Store ---
     // This is where the user store fetches the app list from
-    RAW_DATA_URL: 'https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME/main/data/links.json'
+    RAW_DATA_URL: 'https://github.com/vaguevault76-ctrl/callanix-apps-store/blob/cd1eeed24c7acebed42b96dccfc3743424ee561d/data/links.json'
 
 };
