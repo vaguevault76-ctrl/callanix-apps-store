@@ -16,67 +16,6 @@ A dual-website app store platform — a public **User Store** and a private **De
 └── README.md
 ```
 
-## Setup Instructions
-
-### 1. Create a GitHub Repository
-
-1. Go to https://github.com/new
-2. Create a new **public** repository
-3. Upload all files from this project to the repo
-
-### 2. Enable GitHub Pages
-
-1. Go to your repo **Settings** → **Pages**
-2. Under "Branch", select `main` and `/ (root)` folder
-3. Click **Save**
-4. Your sites will be live at:
-   - Landing: `https://YOUR_USERNAME.github.io/YOUR_REPO/`
-   - User Store: `https://YOUR_USERNAME.github.io/YOUR_REPO/user/`
-   - Dev Portal: `https://YOUR_USERNAME.github.io/YOUR_REPO/dev/`
-
-### 3. Configure `dev/config.js`
-
-Edit this file and update:
-
-```js
-PASSWORD_HASH: '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9',
-// Default password is "admin123"
-// To change: go to https://emn178.github.io/online-tools/sha256.html
-// Type your password → copy the hash → paste it here
-
-GITHUB_OWNER: 'YOUR_GITHUB_USERNAME',     // Your GitHub username
-GITHUB_REPO: 'YOUR_REPO_NAME',            // Repository name
-
-RAW_DATA_URL: 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/data/links.json'
-```
-
-### 4. Configure `user/index.html`
-
-Find the `DATA_URLS` array near the top of the `<script>` and update the first URL:
-
-```js
-const DATA_URLS = [
-    'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/data/links.json',
-    '../data/links.json'
-];
-```
-
-### 5. Commit and Push
-
-After configuring, commit and push all files to GitHub.
-
-## How to Add Apps (Workflow)
-
-**No API keys or tokens needed.** The workflow is simple:
-
-1. Go to your Dev Portal (`/dev/`) and enter your password
-2. Add / edit / delete apps — all data saves automatically in your browser
-3. When ready to publish, click **"Publish to GitHub"**
-4. A modal opens with two buttons:
-   - **"Copy Data"** — copies all your apps as JSON to clipboard
-   - **"Open GitHub Editor"** — opens `data/links.json` on GitHub.com
-5. In GitHub: **select all existing content → paste → click "Commit changes"**
-6. User Store updates instantly (allow 1-2 min for CDN cache)
 
 ## Features
 
