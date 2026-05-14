@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Callanix Store - Apps & Games</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow-x: hidden; }
+        .bg-glow { position: fixed; width: 600px; height: 600px; border-radius: 50%; filter: blur(120px); opacity: 0.15; pointer-events: none; z-index: 0; }
+        .bg-glow-1 { top: -200px; left: -200px; background: #6c5ce7; animation: float 8s ease-in-out infinite; }
+        .bg-glow-2 { bottom: -200px; right: -200px; background: #00cec9; animation: float 10s ease-in-out infinite reverse; }
+        @keyframes float { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(50px,-50px) scale(1.1); } }
+        .container { position: relative; z-index: 1; text-align: center; padding: 40px 20px; max-width: 900px; width: 100%; }
+        .logo { font-size: 48px; font-weight: 900; background: linear-gradient(135deg, #6c5ce7, #00cec9, #6c5ce7); background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: gradientShift 4s ease infinite; margin-bottom: 8px; }
+        @keyframes gradientShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+        .subtitle { font-size: 18px; color: #888; margin-bottom: 50px; letter-spacing: 2px; }
+        .cards { display: flex; gap: 30px; justify-content: center; flex-wrap: wrap; }
+        .card { background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 40px; width: 320px; text-decoration: none; color: #fff; transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); position: relative; overflow: hidden; cursor: pointer; }
+        .card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); transition: 0.6s; }
+        .card:hover::before { left: 100%; }
+        .card:hover { transform: translateY(-10px) scale(1.02); border-color: rgba(108,92,231,0.4); box-shadow: 0 20px 60px rgba(108,92,231,0.2); }
+        .card-icon { font-size: 52px; margin-bottom: 20px; display: inline-block; }
+        .card:nth-child(1) .card-icon { color: #6c5ce7; }
+        .card:nth-child(2) .card-icon { color: #00cec9; }
+        .card h2 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+        .card p { color: #999; font-size: 14px; line-height: 1.6; }
+        .card .badge { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 16px; }
+        .card:nth-child(1) .badge { background: rgba(108,92,231,0.2); color: #6c5ce7; border: 1px solid rgba(108,92,231,0.3); }
+        .card:nth-child(2) .badge { background: rgba(0,206,201,0.2); color: #00cec9; border: 1px solid rgba(0,206,201,0.3); }
+        @keyframes spaceInDown { 0% { opacity: 0; transform: scale(0.2) translateY(-200px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        .card { animation: spaceInDown 0.8s cubic-bezier(0.23, 1, 0.32, 1) both; }
+        .card:nth-child(1) { animation-delay: 0.2s; }
+        .card:nth-child(2) { animation-delay: 0.4s; }
+        .logo, .subtitle { animation: spaceInDown 0.8s cubic-bezier(0.23, 1, 0.32, 1) both; }
+        .subtitle { animation-delay: 0.1s; }
+        .footer { margin-top: 60px; color: #555; font-size: 13px; }
+        @media(max-width:768px) { .card { width: 100%; max-width: 320px; padding: 30px; } .logo { font-size: 36px; } }
+        .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+        .particle { position: absolute; width: 3px; height: 3px; background: rgba(108,92,231,0.4); border-radius: 50%; animation: particleFloat 15s infinite linear; }
+        @keyframes particleFloat { 0% { transform: translateY(100vh) rotate(0deg); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="container">
+        <div class="logo">CALLANIX</div>
+        <div class="subtitle">✦ App Store Platform</div>
+        <div class="cards">
+            <a href="user/" class="card">
+                <div class="card-icon"><i class="fas fa-store"></i></div>
+                <h2>User Store</h2>
+                <p>Browse and discover amazing apps, games, and tools curated just for you.</p>
+                <div class="badge">Enter Store →</div>
+            </a>
+            <a href="dev/" class="card">
+                <div class="card-icon"><i class="fas fa-code"></i></div>
+                <h2>Dev Portal</h2>
+                <p>Upload and manage your apps. Secure developer dashboard with full control.</p>
+                <div class="badge">Developer Access →</div>
+            </a>
+        </div>
+        <div class="footer">&copy; 2026 Callanix Store. All rights reserved.</div>
+    </div>
+    <script>
+        for(let i=0;i<30;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDuration=(12+Math.random()*18)+'s';p.style.animationDelay=Math.random()*15+'s';p.style.width=p.style.height=(1+Math.random()*3)+'px';document.getElementById('particles').appendChild(p)}
+    </script>
+</body>
+</html>

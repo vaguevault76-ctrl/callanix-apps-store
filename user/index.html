@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Callanix Store - Apps & Games</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+body { font-family: 'Inter', sans-serif; background: #000; color: #fff; overflow-x: hidden; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #6c5ce7; border-radius: 3px; }
+
+/* Anti-copy */
+body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+img { -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none; -o-user-drag: none; user-drag: none; }
+
+/* Background */
+.bg-glow { position: fixed; border-radius: 50%; filter: blur(150px); opacity: 0.1; pointer-events: none; z-index: 0; }
+.bg-glow-1 { width: 500px; height: 500px; top: -200px; left: -100px; background: #6c5ce7; animation: floatGlow 10s ease-in-out infinite; }
+.bg-glow-2 { width: 400px; height: 400px; bottom: -100px; right: -100px; background: #00cec9; animation: floatGlow 12s ease-in-out infinite reverse; }
+.bg-glow-3 { width: 300px; height: 300px; top: 50%; left: 50%; background: #fd79a8; animation: floatGlow 8s ease-in-out infinite 2s; }
+@keyframes floatGlow { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,-40px) scale(1.1); } }
+
+/* Navbar */
+.navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 16px 40px; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+.nav-logo { font-size: 22px; font-weight: 900; background: linear-gradient(135deg, #6c5ce7, #00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+.nav-logo i { margin-right: 8px; -webkit-text-fill-color: #6c5ce7; }
+.nav-links { display: flex; gap: 20px; align-items: center; }
+.nav-links a { color: #888; text-decoration: none; font-size: 14px; font-weight: 500; transition: 0.3s; }
+.nav-links a:hover { color: #fff; }
+.nav-links a i { margin-right: 6px; }
+
+/* Hero */
+.hero { position: relative; z-index: 1; padding: 140px 40px 60px; text-align: center; }
+.hero h1 { font-size: clamp(32px,5vw,64px); font-weight: 900; line-height: 1.1; margin-bottom: 16px; }
+.hero h1 span { background: linear-gradient(135deg, #6c5ce7, #00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero p { color: #888; font-size: 18px; max-width: 600px; margin: 0 auto 30px; line-height: 1.6; }
+
+/* Search */
+.search-box { max-width: 560px; margin: 0 auto; position: relative; }
+.search-box input { width: 100%; padding: 16px 20px 16px 52px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 16px; outline: none; transition: 0.4s; font-family: inherit; }
+.search-box input:focus { border-color: #6c5ce7; background: rgba(108,92,231,0.08); box-shadow: 0 0 30px rgba(108,92,231,0.15); }
+.search-box input::placeholder { color: #555; }
+.search-box i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #555; font-size: 18px; }
+.search-box .clear-btn { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #555; cursor: pointer; font-size: 16px; display: none; }
+.search-box .clear-btn.show { display: block; }
+
+/* Categories */
+.categories { position: relative; z-index: 1; padding: 20px 40px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.cat-btn { padding: 10px 22px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #888; cursor: pointer; font-size: 13px; font-weight: 500; transition: 0.3s; font-family: inherit; }
+.cat-btn:hover { border-color: rgba(108,92,231,0.3); color: #fff; background: rgba(108,92,231,0.1); }
+.cat-btn.active { background: #6c5ce7; color: #fff; border-color: #6c5ce7; }
+.cat-btn i { margin-right: 6px; }
+
+/* Grid */
+.app-grid { position: relative; z-index: 1; padding: 30px 40px 80px; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 20px; max-width: 1280px; margin: 0 auto; }
+.app-card { background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 24px; cursor: pointer; transition: all 0.5s cubic-bezier(0.23,1,0.32,1); position: relative; overflow: hidden; animation: spaceInDown 0.6s cubic-bezier(0.23,1,0.32,1) both; }
+.app-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.03),transparent); transition: 0.6s; }
+.app-card:hover::before { left: 100%; }
+.app-card:hover { transform: translateY(-8px); border-color: rgba(108,92,231,0.3); box-shadow: 0 15px 50px rgba(0,0,0,0.4); }
+.app-card .card-top { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+.app-card .card-icon { width: 52px; height: 52px; border-radius: 14px; object-fit: cover; flex-shrink: 0; }
+.app-card .card-title { font-size: 16px; font-weight: 700; }
+.app-card .card-category { font-size: 11px; color: #6c5ce7; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+.app-card .card-desc { color: #777; font-size: 13px; line-height: 1.5; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.app-card .card-footer { display: flex; justify-content: space-between; align-items: center; }
+.app-card .card-btn { padding: 8px 18px; border-radius: 10px; border: none; background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; font-family: inherit; }
+.app-card .card-btn:hover { transform: scale(1.05); box-shadow: 0 5px 20px rgba(108,92,231,0.3); }
+.app-card .card-screenshots { display: flex; gap: 6px; margin-top: 12px; }
+.app-card .card-screenshots img { width: 60px; height: 80px; border-radius: 8px; object-fit: cover; opacity: 0.7; transition: 0.3s; }
+.app-card .card-screenshots img:hover { opacity: 1; transform: scale(1.05); }
+
+/* Modal */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s ease; }
+.modal-overlay.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal { background: linear-gradient(145deg,rgba(20,20,20,0.95),rgba(10,10,10,0.98)); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 36px; position: relative; animation: spaceInDown 0.5s cubic-bezier(0.23,1,0.32,1); }
+.modal-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.05); color: #888; cursor: pointer; font-size: 16px; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+.modal-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.modal-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+.modal-header img { width: 64px; height: 64px; border-radius: 16px; }
+.modal-header h2 { font-size: 22px; }
+.modal-header .cat-badge { font-size: 11px; color: #6c5ce7; text-transform: uppercase; letter-spacing: 1px; }
+.modal-desc { color: #999; font-size: 14px; line-height: 1.7; margin-bottom: 20px; }
+.modal-screenshots { display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap: 10px; margin-bottom: 24px; }
+.modal-screenshots img { width: 100%; height: 100px; object-fit: cover; border-radius: 10px; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+.modal-screenshots img:hover { transform: scale(1.03); border-color: #6c5ce7; }
+.modal-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; font-family: inherit; }
+.modal-btn:hover { transform: scale(1.02); box-shadow: 0 8px 30px rgba(108,92,231,0.3); }
+.modal-btn i { margin-right: 8px; }
+
+/* Ad Wait Modal */
+.ad-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(20px); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
+.ad-modal.show { display: flex; }
+.ad-modal-content { text-align: center; max-width: 400px; }
+.ad-modal-content .ad-icon { font-size: 64px; color: #6c5ce7; margin-bottom: 20px; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }
+.ad-modal-content h3 { font-size: 22px; margin-bottom: 8px; }
+.ad-modal-content p { color: #888; font-size: 14px; margin-bottom: 20px; }
+.ad-modal-content .ad-timer { font-size: 48px; font-weight: 900; background: linear-gradient(135deg,#6c5ce7,#00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
+.ad-modal-content .ad-progress { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 20px; }
+.ad-modal-content .ad-progress-bar { height: 100%; background: linear-gradient(90deg,#6c5ce7,#00cec9); border-radius: 2px; width: 0%; transition: width 0.1s linear; }
+.ad-modal-content .ad-continue { display: none; padding: 14px 40px; border-radius: 12px; border: none; background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.3s; font-family: inherit; margin: 0 auto; }
+.ad-modal-content .ad-continue.show { display: inline-block; }
+.ad-modal-content .ad-continue:hover { transform: scale(1.05); }
+
+/* Loading */
+.loading { position: relative; z-index: 1; text-align: center; padding: 60px; display: none; }
+.loading.show { display: block; }
+.loading .spinner { width: 48px; height: 48px; border: 3px solid rgba(108,92,231,0.1); border-top-color: #6c5ce7; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading p { color: #666; font-size: 14px; }
+.empty-state { position: relative; z-index: 1; text-align: center; padding: 80px 20px; display: none; }
+.empty-state.show { display: block; }
+.empty-state i { font-size: 64px; color: #333; margin-bottom: 16px; }
+.empty-state h3 { color: #666; font-size: 18px; }
+
+/* Footer */
+.footer { position: relative; z-index: 1; text-align: center; padding: 30px 40px; border-top: 1px solid rgba(255,255,255,0.05); color: #444; font-size: 13px; }
+.footer a { color: #6c5ce7; text-decoration: none; }
+
+/* Responsive */
+@media(max-width:768px) {
+    .navbar { padding: 14px 20px; }
+    .hero { padding: 120px 20px 40px; }
+    .app-grid { padding: 20px; gap: 14px; grid-template-columns: 1fr; }
+    .categories { padding: 12px 20px; }
+    .modal { padding: 24px; }
+}
+
+/* Swap animation helper */
+@keyframes swap { 0% { opacity: 0; transform: scale(0.8) rotateZ(-3deg); } 100% { opacity: 1; transform: scale(1) rotateZ(0); } }
+.app-card { animation-name: spaceInDown; }
+@keyframes spaceInDown { 0% { opacity: 0; transform: scale(0.2) translateY(-200px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+</style>
+</head>
+<body>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+<div class="bg-glow bg-glow-3"></div>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <a href="../" class="nav-logo"><i class="fas fa-cube"></i> CALLANIX</a>
+    <div class="nav-links">
+        <a href="#" id="navCount"><i class="fas fa-layer-group"></i> <span>0</span> Apps</a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <h1>Discover <span>Amazing Apps</span></h1>
+    <p>Curated collection of the best apps, games, and tools. Find your next download.</p>
+    <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Search apps..." autocomplete="off">
+        <span class="clear-btn" id="clearBtn"><i class="fas fa-times"></i></span>
+    </div>
+</section>
+
+<!-- Categories -->
+<div class="categories" id="categories">
+    <button class="cat-btn active" data-cat="all"><i class="fas fa-th-large"></i> All</button>
+</div>
+
+<!-- Loading -->
+<div class="loading show" id="loading">
+    <div class="spinner"></div>
+    <p>Loading apps...</p>
+</div>
+
+<!-- Empty -->
+<div class="empty-state" id="emptyState">
+    <i class="fas fa-box-open"></i>
+    <h3>No apps found</h3>
+</div>
+
+<!-- App Grid -->
+<div class="app-grid" id="appGrid"></div>
+
+<!-- App Detail Modal -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+        <div class="modal-header">
+            <img id="modalIcon" src="" alt="">
+            <div>
+                <h2 id="modalTitle"></h2>
+                <span class="cat-badge" id="modalCategory"></span>
+            </div>
+        </div>
+        <p class="modal-desc" id="modalDesc"></p>
+        <div class="modal-screenshots" id="modalScreenshots"></div>
+        <button class="modal-btn" id="modalBtn"><i class="fas fa-download"></i> Visit App</button>
+    </div>
+</div>
+
+<!-- Ad Gateway Modal -->
+<div class="ad-modal" id="adModal">
+    <div class="ad-modal-content">
+        <div class="ad-icon"><i class="fas fa-shield-halved"></i></div>
+        <h3>Verifying Access</h3>
+        <p>Please wait while we prepare your download link...</p>
+        <div class="ad-timer" id="adTimer">5</div>
+        <div class="ad-progress"><div class="ad-progress-bar" id="adProgress"></div></div>
+        <button class="ad-continue" id="adContinue"><i class="fas fa-rocket"></i> Continue to App</button>
+    </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">&copy; 2026 Callanix Store. All rights reserved. | Built with <i class="fas fa-heart" style="color:#6c5ce7;"></i></div>
+
+<script>
+// Anti-devtools
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','C','J'].includes(e.key)) || (e.ctrlKey && ['u','s'].includes(e.key))) e.preventDefault();
+});
+// Devtools detection
+(function(){const d=new Image();Object.defineProperty(d,'id',{get:function(){document.body.innerHTML='<div style="text-align:center;padding:100px 20px;color:#fff;"><h1>Access Denied</h1><p>Developer tools detected.</p></div>';}});console.log('%c',d);})();
+
+// State
+let apps = [];
+let currentApp = null;
+let filteredApps = [];
+
+// DOM refs
+const grid = document.getElementById('appGrid');
+const loading = document.getElementById('loading');
+const emptyState = document.getElementById('emptyState');
+const searchInput = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearBtn');
+const categories = document.getElementById('categories');
+const modalOverlay = document.getElementById('modalOverlay');
+const modalIcon = document.getElementById('modalIcon');
+const modalTitle = document.getElementById('modalTitle');
+const modalCategory = document.getElementById('modalCategory');
+const modalDesc = document.getElementById('modalDesc');
+const modalScreenshots = document.getElementById('modalScreenshots');
+const modalBtn = document.getElementById('modalBtn');
+const modalClose = document.getElementById('modalClose');
+const navCount = document.getElementById('navCount').querySelector('span');
+const adModal = document.getElementById('adModal');
+const adTimer = document.getElementById('adTimer');
+const adProgress = document.getElementById('adProgress');
+const adContinue = document.getElementById('adContinue');
+
+// ============================================================
+// CONFIG: Set your GitHub raw data URL
+// Change YOUR_USERNAME and YOUR_REPO below to match your GitHub
+// ============================================================
+const DATA_URLS = [
+    'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/data/links.json',
+    '../data/links.json'
+];
+
+// Fetch apps
+async function fetchApps() {
+    loading.classList.add('show');
+    grid.innerHTML = '';
+    emptyState.classList.remove('show');
+    apps = [];
+    for (const url of DATA_URLS) {
+        try {
+            const res = await fetch(url + '?t=' + Date.now());
+            if (!res.ok) continue;
+            const text = await res.text();
+            const data = JSON.parse(text);
+            if (Array.isArray(data) && data.length) { apps = data; break; }
+        } catch(e) { /* try next URL */ }
+    }
+    loading.classList.remove('show');
+    renderCategories();
+    renderApps();
+}
+
+// Render categories
+function renderCategories() {
+    const cats = new Set();
+    apps.forEach(a => { if(a.category) cats.add(a.category); });
+    const catMap = { 'all':'All','games':'Games','tools':'Tools','entertainment':'Entertainment','education':'Education','other':'Other' };
+    const icons = { 'games':'fa-gamepad','tools':'fa-wrench','entertainment':'fa-film','education':'fa-graduation-cap','other':'fa-star' };
+    categories.innerHTML = '<button class="cat-btn active" data-cat="all"><i class="fas fa-th-large"></i> All</button>';
+    cats.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'cat-btn';
+        btn.dataset.cat = c;
+        btn.innerHTML = `<i class="fas ${icons[c]||'fa-star'}"></i> ${catMap[c]||c}`;
+        btn.addEventListener('click', () => filterByCategory(c));
+        categories.appendChild(btn);
+    });
+    // Re-bind "All" button
+    categories.querySelector('[data-cat="all"]').addEventListener('click', () => filterByCategory('all'));
+}
+
+// Filter by category
+function filterByCategory(cat) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    const btn = categories.querySelector(`[data-cat="${cat}"]`);
+    if (btn) btn.classList.add('active');
+    applyFilters(cat, searchInput.value);
+}
+
+// Search
+searchInput.addEventListener('input', () => {
+    const active = document.querySelector('.cat-btn.active');
+    applyFilters(active ? active.dataset.cat : 'all', searchInput.value);
+    clearBtn.classList.toggle('show', searchInput.value.length > 0);
+});
+clearBtn.addEventListener('click', () => { searchInput.value = ''; clearBtn.classList.remove('show'); applyFilters('all', ''); });
+
+// Apply filters
+function applyFilters(cat, query) {
+    filteredApps = apps.filter(a => {
+        if (cat !== 'all' && a.category !== cat) return false;
+        if (query) {
+            const q = query.toLowerCase();
+            return a.title.toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q);
+        }
+        return true;
+    });
+    renderGrid();
+}
+
+// Render grid
+function renderGrid() {
+    grid.innerHTML = '';
+    if (filteredApps.length === 0) {
+        emptyState.classList.add('show');
+        return;
+    }
+    emptyState.classList.remove('show');
+    navCount.textContent = filteredApps.length;
+    filteredApps.forEach((app, i) => {
+        const card = document.createElement('div');
+        card.className = 'app-card';
+        card.style.animationDelay = (i * 0.05) + 's';
+        card.innerHTML = `
+            <div class="card-top">
+                <img class="card-icon" src="${app.iconUrl||'https://via.placeholder.com/52/6c5ce7/ffffff?text=A'}" alt="" loading="lazy" onerror="this.src='https://via.placeholder.com/52/6c5ce7/ffffff?text=?'">
+                <div>
+                    <div class="card-title">${app.title||'Untitled'}</div>
+                    <div class="card-category">${app.category||'other'}</div>
+                </div>
+            </div>
+            <div class="card-desc">${app.description||'No description available.'}</div>
+            ${app.screenshots && app.screenshots.length ? `<div class="card-screenshots">${app.screenshots.slice(0,3).map(s => `<img src="${s}" alt="" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>` : ''}
+            <div class="card-footer">
+                <span style="color:#555;font-size:12px;"><i class="far fa-clock"></i> ${app.createdAt ? new Date(app.createdAt).toLocaleDateString() : ''}</span>
+                <button class="card-btn" data-id="${app.id}"><i class="fas fa-eye"></i> View</button>
+            </div>
+        `;
+        card.querySelector('.card-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openModal(app);
+        });
+        card.addEventListener('click', () => openModal(app));
+        grid.appendChild(card);
+    });
+}
+
+// Open modal
+function openModal(app) {
+    currentApp = app;
+    modalIcon.src = app.iconUrl || 'https://via.placeholder.com/64/6c5ce7/ffffff?text=A';
+    modalIcon.onerror = function(){ this.src='https://via.placeholder.com/64/6c5ce7/ffffff?text=?'; };
+    modalTitle.textContent = app.title || 'Untitled';
+    modalCategory.textContent = (app.category||'other').toUpperCase();
+    modalDesc.textContent = app.description || 'No description available.';
+    modalScreenshots.innerHTML = '';
+    if (app.screenshots && app.screenshots.length) {
+        app.screenshots.forEach(s => {
+            const img = document.createElement('img');
+            img.src = s;
+            img.loading = 'lazy';
+            img.onerror = function(){ this.style.display='none'; };
+            modalScreenshots.appendChild(img);
+        });
+    } else {
+        modalScreenshots.innerHTML = '<p style="color:#555;font-size:13px;">No screenshots available.</p>';
+    }
+    modalOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close modal
+modalClose.addEventListener('click', () => { modalOverlay.classList.remove('show'); document.body.style.overflow = ''; });
+modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) { modalOverlay.classList.remove('show'); document.body.style.overflow = ''; } });
+
+// Visit app (with Ad Gateway)
+modalBtn.addEventListener('click', () => {
+    modalOverlay.classList.remove('show');
+    document.body.style.overflow = '';
+    if (!currentApp) return;
+    if (currentApp.adUrl) {
+        showAdGateway(currentApp);
+    } else {
+        window.open(currentApp.url, '_blank');
+    }
+});
+
+// Ad Gateway
+function showAdGateway(app) {
+    adModal.classList.add('show');
+    let count = 5;
+    adTimer.textContent = count;
+    adProgress.style.width = '0%';
+    adContinue.classList.remove('show');
+    const interval = setInterval(() => {
+        count--;
+        adTimer.textContent = count;
+        adProgress.style.width = ((5 - count) / 5 * 100) + '%';
+        if (count <= 0) {
+            clearInterval(interval);
+            adTimer.textContent = '0';
+            adProgress.style.width = '100%';
+            adContinue.classList.add('show');
+        }
+    }, 1000);
+    // Open ad URL in background
+    const adWindow = window.open(app.adUrl, '_blank');
+    adContinue.onclick = () => {
+        adModal.classList.remove('show');
+        if (app.url) window.open(app.url, '_blank');
+    };
+}
+
+// Keyboard shortcut disable helper
+['contextmenu','selectstart','copy','cut','dragstart'].forEach(e => document.addEventListener(e, e => e.preventDefault()));
+
+// Init
+fetchApps();
+</script>
+</body>
+</html>
