@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   publish:
-    if: contains(github.event.issue.labels.*.name, 'app-submission') || github.event_name != 'issues'
+    if: contains(github.event.issue.labels.*.name, 'app-submission') || contains(github.event.issue.body, '### Request type') || github.event_name != 'issues'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -135,7 +135,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <button class="submit-btn" id="openIssueBtn"><i class="fas fa-external-link-alt"></i> OPEN GITHUB TICKET</button>
 <button class="ghost-btn" id="copyBtn"><i class="fas fa-copy"></i> COPY DETAILS</button>
 </div>
-<div class="helper" style="margin-top:12px">Opens a prefilled submission ticket — you only press Submit on GitHub. COPY DETAILS is the fallback if prefilling ever misses a field.</div>
+<div class="helper" style="margin-top:12px">Opens your filing as a ready ticket with everything filled — just press Submit new issue. COPY DETAILS is the fallback if anything ever arrives empty.</div>
 </div>
 
 <div class="panel" id="track">
@@ -241,19 +241,28 @@ function filing() {
   };
 }
 
-const TEMPLATES = { new: "new-app.yml", edit: "edit-app.yml", delete: "delete-app.yml" };
+const REQ_LABEL = { new: "req-new", edit: "req-edit", delete: "req-delete" };
+function ticketBody(f) {
+  const req = f.action === "edit" ? "Edit app" : f.action === "delete" ? "Delete app" : "New app";
+  const opt = (v) => (v && String(v).trim() ? String(v).trim() : "_No response_");
+  return [
+    "### Request type", "", req, "",
+    "### App ID (for Edit / Delete only)", "", opt(f.appId), "",
+    "### App title", "", opt(f.title), "",
+    "### Category", "", opt(f.category), "",
+    "### Description", "", opt(f.desc), "",
+    "### App URL", "", opt(f.url), "",
+    "### Ad gateway URL (optional)", "", opt(f.adUrl), "",
+    "### Icon URL (optional)", "", opt(f.icon), "",
+    "### Screenshot URLs (optional)", "", f.shots.trim() ? f.shots.trim() : "_No response_", "",
+    "### Confirmation", "", "- [X] I have the right to share this app and its links", "",
+  ].join("\n");
+}
 function issueUrl(f) {
   const p = new URLSearchParams({
-    template: TEMPLATES[f.action] || TEMPLATES.new,
     title: f.title || f.appId || "new submission",
-    "app-id": f.appId,
-    "app-title": f.title,
-    category: f.category,
-    description: f.desc,
-    "app-url": f.url,
-    "ad-url": f.adUrl,
-    "icon-url": f.icon,
-    screenshots: f.shots,
+    body: ticketBody(f),
+    labels: "app-submission," + (REQ_LABEL[f.action] || REQ_LABEL.new),
   });
   return "https://github.com/" + OWNER + "/" + REPO + "/issues/new?" + p.toString();
 }

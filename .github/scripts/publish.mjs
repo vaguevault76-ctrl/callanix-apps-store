@@ -187,6 +187,16 @@ export function approvedFor({ labels, author, priv, mode }) {
   return mode !== "approve";
 }
 
+export const PORTAL_MARKER = "### Request type";
+
+// Portal tickets carry the whole filing in the body. If GitHub ever drops
+// the labels param, they arrive unlabeled — still recognizable by marker.
+export function isPortalIssue(issue) {
+  if (issue.pull_request) return false;
+  if ((issue.labels || []).some((l) => l.name === "app-submission")) return false;
+  return String(issue.body || "").trimStart().startsWith(PORTAL_MARKER);
+}
+
 export function decideIssues(issues, apps, priv, mode) {
   const results = [];
   let changed = false;
@@ -232,6 +242,14 @@ async function applyPhase() {
   const issues = await api(
     `/repos/${REPO}/issues?labels=app-submission&state=open&per_page=100`
   );
+  // Safety net: portal filings whose labels were dropped still count.
+  try {
+    const open = await api(`/repos/${REPO}/issues?state=open&per_page=100`);
+    const seen = new Set(issues.map((i) => i.number));
+    for (const i of open) {
+      if (!seen.has(i.number) && isPortalIssue(i)) issues.push(i);
+    }
+  } catch {}
   const { results, changed } = decideIssues(issues, apps, priv, mode);
   if (changed) writeFileSync(LINKS, JSON.stringify(apps, null, 2) + "\n");
   writeFileSync(RESULTS, JSON.stringify(results, null, 2));
@@ -432,6 +450,28 @@ function selftest() {
   );
   assert.equal(d.results[0].action, "deleted");
   assert.equal(a4.length, 0);
+
+  // unlabeled portal filings (labels param dropped) are recognizable
+  const portalBody = [
+    "### Request type", "", "New app", "",
+    "### App ID (for Edit / Delete only)", "", "_No response_", "",
+    "### App title", "", "Portal App", "",
+    "### Category", "", "Tools", "",
+    "### Description", "", "Filed from the portal.", "",
+    "### App URL", "", "https://example.com/p", "",
+    "### Ad gateway URL (optional)", "", "_No response_", "",
+    "### Icon URL (optional)", "", "_No response_", "",
+    "### Screenshot URLs (optional)", "", "_No response_", "",
+    "### Confirmation", "", "- [X] I have the right to share this app and its links", "",
+  ].join("\n");
+  assert.equal(isPortalIssue({ labels: [], body: portalBody }), true);
+  assert.equal(isPortalIssue({ labels: [{ name: "app-submission" }], body: portalBody }), false);
+  assert.equal(isPortalIssue({ labels: [], body: "just chatting" }), false);
+  assert.equal(isPortalIssue({ pull_request: {}, labels: [], body: portalBody }), false);
+  let a5 = [];
+  d = decideIssues([{ number: 15, user: { login: "stranger" }, labels: [], body: portalBody }], a5, new Set(["owner"]), "auto");
+  assert.equal(d.results[0].action, "published");
+  assert.equal(a5[0].id, "app-15");
 
   // HTML in text fields is stripped on write
   const h = [];
