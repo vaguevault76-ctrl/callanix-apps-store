@@ -245,7 +245,7 @@ function issueUrl(f) {
   const label = f.action === "edit" ? "Edit app" : f.action === "delete" ? "Delete app" : "New app";
   const p = new URLSearchParams({
     template: "app-submission.yml",
-    title: "[app] " + (f.title || f.appId || "new submission"),
+    title: f.title || f.appId || "new submission",
     request: label,
     "app-id": f.appId,
     "app-title": f.title,

@@ -1,6 +1,5 @@
 name: Submit an app
 description: Propose a new app, edit an existing one, or request a removal. No repo access needed.
-title: "[app] "
 labels: ["app-submission"]
 body:
   - type: dropdown
@@ -12,7 +11,6 @@ body:
         - New app
         - Edit app
         - Delete app
-      default: 0
     validations:
       required: true
   - type: input
@@ -37,7 +35,6 @@ body:
         - Entertainment
         - Education
         - Other
-      default: 4
   - type: textarea
     id: description
     attributes:
