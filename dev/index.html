@@ -250,16 +250,21 @@ const TEMPLATES = { new: "new-app.yml", edit: "edit-app.yml", delete: "delete-ap
 function ticketBody(f) {
   const req = f.action === "edit" ? "Edit app" : f.action === "delete" ? "Delete app" : "New app";
   const opt = (v) => (v && String(v).trim() ? String(v).trim() : "_No response_");
+  const quote = (v) => String(v).trim().split("\n").map((l) => "> " + l).join("\n");
+  const link = (label, v) => (v && String(v).trim() ? "[" + label + "](" + String(v).trim() + ")" : "_No response_");
+  const shots = f.shots.trim()
+    ? f.shots.trim().split("\n").map((s, i) => (i + 1) + ". " + s.trim()).filter((l) => l.replace(/^\d+\.\s*/, "")).join("\n")
+    : "_No response_";
   return [
-    "### Request type", "", req, "",
-    "### App ID (for Edit / Delete only)", "", opt(f.appId), "",
-    "### App title", "", opt(f.title), "",
-    "### Category", "", opt(f.category), "",
-    "### Description", "", opt(f.desc), "",
-    "### App URL", "", opt(f.url), "",
-    "### Ad gateway URL (optional)", "", opt(f.adUrl), "",
-    "### Icon URL (optional)", "", opt(f.icon), "",
-    "### Screenshot URLs (optional)", "", f.shots.trim() ? f.shots.trim() : "_No response_", "",
+    "### Request type", "", "**" + req + "**", "",
+    "### App ID (for Edit / Delete only)", "", opt(f.appId) === "_No response_" ? "_No response_" : "`" + opt(f.appId) + "`", "",
+    "### App title", "", "**" + opt(f.title) + "**", "",
+    "### Category", "", "`" + opt(f.category) + "`", "",
+    "### Description", "", f.desc.trim() ? quote(f.desc) : "_No response_", "",
+    "### App URL", "", link("Open the app", f.url), "",
+    "### Ad gateway URL (optional)", "", link("Open the ad", f.adUrl), "",
+    "### Icon URL (optional)", "", link("View the icon", f.icon), "",
+    "### Screenshot URLs (optional)", "", shots, "",
     "### Confirmation", "", "- [X] I have the right to share this app and its links", "",
   ].join("\n");
 }

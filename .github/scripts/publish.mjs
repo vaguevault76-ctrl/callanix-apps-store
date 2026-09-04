@@ -51,31 +51,39 @@ export function parseBody(raw) {
   for (let i = 1; i < parts.length; i += 2) {
     sections[parts[i].trim()] = (parts[i + 1] || "").trim();
   }
-  const blank = (v) => {
-    const t = (v || "").trim();
-    return t === "" || t === "_No response_" || /^none$/i.test(t) ? "" : t;
-  };
   const get = (name) => sections[name] || "";
-  const lines = (s) =>
-    s
+  // Tickets are formatted markdown (bold, code, quotes, links, lists), so
+  // values are read through the formatting back to clean data.
+  const edge = (s) => String(s || "").replace(/^[*`_~"' \t]+|[*`_~"' \t]+$/g, "");
+  const clean = (s) => {
+    const t = edge(s).replace(/^_+|_+$/g, "");
+    return t === "" || t === "No response" || /^none$/i.test(t) ? "" : t;
+  };
+  const dequote = (s) =>
+    String(s || "")
       .split("\n")
-      .map((l) => l.trim().replace(/^-\s*\[.\]\s*/, "").trim())
-      .filter(Boolean);
-  const shots = lines(get("Screenshot URLs (optional)")).filter((l) => l !== "_No response_");
+      .map((l) => l.replace(/^\s*>\s?/, ""))
+      .join("\n")
+      .trim();
+  const firstUrl = (s) => {
+    const m = String(s || "").match(/https?:\/\/[^\s)>\]]+/);
+    return m ? m[0] : "";
+  };
+  const allUrls = (s) => String(s || "").match(/https?:\/\/[^\s)>\]]+/g) || [];
   return {
     request: get("Request type").toLowerCase().includes("edit")
       ? "edit"
       : get("Request type").toLowerCase().includes("delete")
         ? "delete"
         : "new",
-    appId: blank(get("App ID (for Edit / Delete only)").split("\n")[0]).replace(/^[`'"]+|[`'"]+$/g, ""),
-    title: get("App title").split("\n")[0].trim(),
-    category: get("Category").split("\n")[0].trim().toLowerCase(),
-    description: get("Description").trim(),
-    url: blank(get("App URL").split("\n")[0]),
-    adUrl: blank(get("Ad gateway URL (optional)").split("\n")[0]),
-    iconUrl: blank(get("Icon URL (optional)").split("\n")[0]),
-    screenshots: shots.slice(0, 20),
+    appId: clean(get("App ID (for Edit / Delete only)").split("\n")[0]),
+    title: clean(get("App title").split("\n")[0]),
+    category: clean(get("Category").split("\n")[0]).toLowerCase(),
+    description: clean(dequote(get("Description"))),
+    url: firstUrl(get("App URL")),
+    adUrl: firstUrl(get("Ad gateway URL (optional)")),
+    iconUrl: firstUrl(get("Icon URL (optional)")),
+    screenshots: allUrls(get("Screenshot URLs (optional)")).slice(0, 20),
     confirmed: /-\s*\[[xX]\]/.test(get("Confirmation")),
   };
 }
@@ -354,7 +362,9 @@ function selftest() {
   const errs = validate(bad, [], "new");
   assert.ok(errs.some((e) => e.includes("App URL")));
   assert.ok(errs.some((e) => e.includes("Confirmation")));
-  assert.ok(errs.some((e) => e.includes("screenshot")));
+  assert.deepEqual(bad.screenshots, ["https://ok.com/a.png"]);
+  const many = parseBody(body({ shots: "https://a.co/1\nhttps://a.co/2\nhttps://a.co/3\nhttps://a.co/4\nhttps://a.co/5\nhttps://a.co/6" }));
+  assert.ok(validate(many, [], "new").some((e) => e.includes("At most 5")));
 
   // apply new
   const apps = [];
@@ -486,6 +496,35 @@ function selftest() {
   );
   assert.equal(d.results[0].action, "updated");
   assert.equal(a6[0].title, "New Name");
+
+  // richly formatted ticket reads back to clean data and publishes
+  const fancy = [
+    "### Request type", "", "**New app**", "",
+    "### App ID (for Edit / Delete only)", "", "_No response_", "",
+    "### App title", "", "**Fancy App**", "",
+    "### Category", "", "`Tools`", "",
+    "### Description", "", "> Does things.", "> Second line.", "",
+    "### App URL", "", "[Open the app](https://example.com/a)", "",
+    "### Ad gateway URL (optional)", "", "_No response_", "",
+    "### Icon URL (optional)", "", "_No response_", "",
+    "### Screenshot URLs (optional)", "", "1. https://example.com/s1.jpg", "2. https://example.com/s2.jpg", "",
+    "### Confirmation", "", "- [X] I have the right to share this app and its links", "",
+  ].join("\n");
+  const fs = parseBody(fancy);
+  assert.equal(fs.title, "Fancy App");
+  assert.equal(fs.category, "tools");
+  assert.equal(fs.description, "Does things.\nSecond line.");
+  assert.equal(fs.url, "https://example.com/a");
+  assert.deepEqual(fs.screenshots, ["https://example.com/s1.jpg", "https://example.com/s2.jpg"]);
+  let a7 = [];
+  d = decideIssues([{ number: 17, user: { login: "s" }, labels: [], body: fancy }], a7, new Set(["o"]), "auto");
+  assert.equal(d.results[0].action, "published");
+  assert.equal(a7[0].title, "Fancy App");
+
+  // formatted empties are still empty and rejected
+  const emptyFancy = fancy.replace("**Fancy App**", "**_No response_**");
+  d = decideIssues([{ number: 18, user: { login: "s" }, labels: [], body: emptyFancy }], [], new Set(["o"]), "auto");
+  assert.equal(d.results[0].action, "needs-fix");
 
   // HTML in text fields is stripped on write
   const h = [];
