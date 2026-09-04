@@ -30,6 +30,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+      - name: Show decisions
+        if: success()
+        run: cat .github/scripts/.results.json
       - name: Commit store data
         if: steps.apply.outputs.changed == 'true'
         run: |

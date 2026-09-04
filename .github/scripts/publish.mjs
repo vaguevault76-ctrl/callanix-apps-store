@@ -68,7 +68,7 @@ export function parseBody(raw) {
       : get("Request type").toLowerCase().includes("delete")
         ? "delete"
         : "new",
-    appId: get("App ID (for Edit / Delete only)").split("\n")[0].trim(),
+    appId: blank(get("App ID (for Edit / Delete only)").split("\n")[0]).replace(/^[`'"]+|[`'"]+$/g, ""),
     title: get("App title").split("\n")[0].trim(),
     category: get("Category").split("\n")[0].trim().toLowerCase(),
     description: get("Description").trim(),
@@ -115,8 +115,16 @@ function authorized(sub, app, author, privileged) {
 }
 
 // ---------- apply ----------
+const noHtml = (s) => String(s || "").replace(/<[^>]*>/g, "").trim();
+
 export function applySubmission(sub, apps, issueNumber, author, privileged) {
   const now = new Date().toISOString();
+  sub = {
+    ...sub,
+    title: noHtml(sub.title).slice(0, 80),
+    description: noHtml(sub.description).slice(0, 1000),
+    category: String(sub.category || "").toLowerCase().trim(),
+  };
   if (sub.request === "delete") {
     const idx = apps.findIndex((a) => a.id === sub.appId);
     if (idx === -1) return { ok: false, errors: ["App not found."] };
@@ -185,7 +193,10 @@ export function decideIssues(issues, apps, priv, mode) {
   for (const issue of issues) {
     if (issue.pull_request) continue;
     const labels = new Set((issue.labels || []).map((l) => l.name));
-    if (labels.has("published") || labels.has("needs-fix")) continue;
+    if (labels.has("published")) continue;
+    // A fixed ticket must get a second chance: retry `needs-fix` in auto
+    // mode, or whenever it carries a fresh `approved` label.
+    if (labels.has("needs-fix") && mode === "approve" && !labels.has("approved")) continue;
     const author = (issue.user?.login || "").toLowerCase();
     const isPriv = priv.has(author);
     if (!approvedFor({ labels, author, priv, mode })) {
@@ -235,7 +246,7 @@ async function reportPhase() {
     const base = `/repos/${REPO}/issues/${r.issue}`;
     if (r.action === "needs-fix") {
       await api(`${base}/comments`, "POST", {
-        body: `Needs a fix before publishing:\n\n${r.errors.map((e) => `- ${e}`).join("\n")}\n\nEdit the issue above, then ask for re-approval.`,
+        body: `Needs a fix before publishing:\n\n${r.errors.map((e) => `- ${e}`).join("\n")}\n\nEdit the issue fields above — the robot retries automatically within a few minutes.`,
       });
       await api(`${base}/labels`, "POST", { labels: ["needs-fix"] });
       try {
@@ -247,6 +258,11 @@ async function reportPhase() {
       body: `Live in the store as \`${r.appId}\` (${r.action}). Thanks for the submission.`,
     });
     await api(`${base}/labels`, "POST", { labels: ["published"] });
+    for (const old of ["needs-fix", "approved"]) {
+      try {
+        await api(`${base}/labels/${old}`, "DELETE");
+      } catch {}
+    }
     await api(base, "PATCH", { state: "closed" });
   }
   console.log(`report: ${results.length} result(s)`);
@@ -381,6 +397,36 @@ function selftest() {
     "auto"
   );
   assert.equal(d.results.length, 0);
+
+  // backticked ID pasted from a ticket receipt still matches
+  const tick = parseBody(body({ request: "Edit app", appId: "`app-7`", title: "T2" }));
+  assert.equal(tick.appId, "app-7");
+
+  // a corrected needs-fix ticket is retried in auto mode, held in approve mode
+  const badIssue = [fake(12, "Stranger", ["app-submission", "needs-fix"], body())];
+  d = decideIssues(badIssue, [{ id: "app-9" }], new Set(["owner"]), "auto");
+  assert.equal(d.results[0].action, "published");
+  d = decideIssues(badIssue, [{ id: "app-9" }], new Set(["owner"]), "approve");
+  assert.equal(d.results.length, 0);
+  d = decideIssues(
+    [fake(13, "Stranger", ["app-submission", "needs-fix", "approved"], body())],
+    [],
+    new Set(["owner"]),
+    "approve"
+  );
+  assert.equal(d.results[0].action, "published");
+
+  // HTML in text fields is stripped on write
+  const h = [];
+  applySubmission(
+    { ...parseBody(body({ title: "<b>Hi</b>", desc: "<img src=x>Yo" })), request: "new" },
+    h,
+    99,
+    "dev",
+    false
+  );
+  assert.equal(h[0].title, "Hi");
+  assert.equal(h[0].description, "Yo");
 
   console.log("selftest: all fixtures passed");
 }
