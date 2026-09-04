@@ -121,6 +121,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 .empty-state i{font-size:52px;color:var(--steel);margin-bottom:14px}
 .empty-state h3{font-family:'Barlow Condensed',sans-serif;font-size:26px;letter-spacing:.06em;color:var(--mut)}
 .empty-state p{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--red);margin-top:8px}
+.empty-state .why{color:var(--dim);display:none}
 .footer{text-align:center;padding:28px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
 .footer a{color:var(--pur2);text-decoration:none}
 @media(max-width:768px){.hall{padding:108px 16px 20px}.navbar{padding:12px 16px}.searchboard{grid-template-columns:1fr}.live{text-align:left}.app-grid{grid-template-columns:1fr}}
@@ -156,7 +157,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 <button class="cat-btn active" data-cat="all"><i class="fas fa-th-large"></i>ALL PLT</button>
 </div>
 <div class="loading show" id="loading" role="status"><div class="spinner"></div><p>FLAPS TURNING…</p></div>
-<div class="empty-state" id="emptyState"><i class="fas fa-box-open"></i><h3>No departures found</h3><p>CANCELLED — TRY ANOTHER DESTINATION</p></div>
+<div class="empty-state" id="emptyState"><i class="fas fa-box-open"></i><h3>No departures found</h3><p>CANCELLED — TRY ANOTHER DESTINATION</p><p class="why" id="emptyWhy"></p></div>
 <div class="app-grid" id="appGrid"></div>
 </div>
 <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true">
@@ -204,6 +205,7 @@ let filteredApps = [];
 const grid = document.getElementById('appGrid');
 const loading = document.getElementById('loading');
 const emptyState = document.getElementById('emptyState');
+const emptyWhy = document.getElementById('emptyWhy');
 const searchInput = document.getElementById('searchInput');
 const clearBtn = document.getElementById('clearBtn');
 const categories = document.getElementById('categories');
@@ -230,23 +232,29 @@ const lbNext = document.getElementById('lbNext');
 let lbList = [];
 let lbIndex = 0;
 const DATA_URLS = [
-'https://github.com/vaguevault76-ctrl/callanix-apps-store/blob/cd1eeed24c7acebed42b96dccfc3743424ee561d/data/links.json',
-'../data/links.json'
+'../data/links.json',
+'https://raw.githubusercontent.com/vaguevault76-ctrl/callanix-apps-store/main/data/links.json'
 ];
 function tick(){var d=new Date(),p=function(n){return String(n).padStart(2,'0')};var el=document.getElementById('clock');if(el)el.textContent=p(d.getHours())+':'+p(d.getMinutes());}
 tick();setInterval(tick,15000);
 async function fetchApps() {
 loading.classList.add('show');grid.innerHTML = '';emptyState.classList.remove('show');apps = [];
+let reached = false;
 for (const url of DATA_URLS) {
 try {
 const res = await fetch(url + '?t=' + Date.now());
 if (!res.ok) continue;
+reached = true;
 const text = await res.text();
 const data = JSON.parse(text);
-if (Array.isArray(data) && data.length) { apps = data; break; }
+if (Array.isArray(data)) { apps = data; if (apps.length) break; }
 } catch(e) {}
 }
 loading.classList.remove('show');renderCategories();applyFilters('all','');
+if (!apps.length && !searchInput.value) {
+emptyWhy.style.display = 'block';
+emptyWhy.textContent = reached ? 'STORE FILE EMPTY — NOTHING PUBLISHED YET' : 'STORE FILE UNREACHABLE — CHECK CONNECTION, THEN HARD-REFRESH';
+} else { emptyWhy.style.display = 'none'; }
 }
 function renderCategories() {
 const cats = new Set();apps.forEach(a => { if(a.category) cats.add(a.category); });
@@ -281,7 +289,7 @@ renderGrid();
 }
 function renderGrid() {
 grid.innerHTML = '';
-if (filteredApps.length === 0) { emptyState.classList.add('show');navCount.textContent='0';if(liveCount)liveCount.textContent='0 ON BOARD';return; }
+if (filteredApps.length === 0) { emptyState.classList.add('show');if(searchInput.value)emptyWhy.style.display='none';navCount.textContent='0';if(liveCount)liveCount.textContent='0 ON BOARD';return; }
 emptyState.classList.remove('show');navCount.textContent = filteredApps.length;if(liveCount)liveCount.textContent = filteredApps.length+' ON BOARD';
 filteredApps.forEach((app, i) => {
 const card = document.createElement('div');card.className = 'app-card';card.style.animationDelay = (Math.min(i,12) * 0.05) + 's';
