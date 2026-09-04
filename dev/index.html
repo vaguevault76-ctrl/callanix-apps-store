@@ -82,6 +82,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .toast.info{background:#141322;border:1px solid rgba(108,92,231,.5);color:var(--pur2)}
 .foot{text-align:center;padding:26px;color:var(--dim);font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
 .foot a{color:var(--pur2);text-decoration:none}
+.pv-doc{background:#0b0d12;border:1px solid var(--line);border-radius:12px;padding:22px 22px 14px}
+.pv-title{font-size:19px;font-weight:800;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.pv-sec{margin-bottom:14px}
+.pv-h{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;color:var(--dim);margin-bottom:5px}
+.pv-v{font-size:14px;line-height:1.65}
+.pv-v code{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:#1a1f2a;padding:2px 8px;border-radius:6px;color:var(--pur2)}
+.pv-v a{color:var(--pur2)}
+.pv-quote{border-left:3px solid var(--pur);padding:2px 0 2px 12px;color:var(--mut)}
+.pv-ol{margin:0;padding-left:22px;color:var(--mut)}
+.pv-dim{color:var(--dim);font-size:12px;font-family:'JetBrains Mono',monospace}
+.pv-warn{color:var(--red);font-size:12px;font-weight:700}
+.pv-check{color:var(--tea);font-size:13.5px}
 @media(max-width:640px){.form-row,.id-row{grid-template-columns:1fr}.main{padding:90px 16px 40px}.panel{padding:20px}}
 @media(prefers-reduced-motion:reduce){.hero{animation:none}}
 </style>
@@ -143,7 +155,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </div>
 <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:22px;letter-spacing:.05em;margin:22px 0 4px;">TICKET PREVIEW</h3>
 <div class="helper" style="margin-bottom:12px">Live — exactly how the ticket will look on GitHub.</div>
-<div class="preview" id="ticketPreview" aria-live="polite"></div>
+<div class="pv-doc" id="ticketPreview" aria-live="polite"></div>
 <div class="actions" style="margin-top:16px">
 <button class="submit-btn" id="openIssueBtn"><i class="fas fa-external-link-alt"></i> OPEN GITHUB TICKET</button>
 <button class="ghost-btn" id="copyBtn"><i class="fas fa-copy"></i> COPY DETAILS</button>
@@ -231,6 +243,7 @@ async function doLoad(rawId) {
   $("sIcon").value = app.iconUrl || "";
   $("sShots").value = (app.screenshots || []).join("\n");
   showToast("Live values loaded.", "success");
+  renderPreview();
 }
 sAction.addEventListener("change", () => {
   const need = sAction.value !== "new";
@@ -299,40 +312,6 @@ function issueUrl(f) {
   return "https://github.com/" + OWNER + "/" + REPO + "/issues/new?" + p.toString();
 }
 
-function renderPreview() {
-  const f = filing();
-  const req = f.action === "edit" ? "Edit app" : f.action === "delete" ? "Delete app" : "New app";
-  const emp = '<span class="pv-empty">_No response_</span>';
-  const val = (v) => (v && String(v).trim() ? esc(String(v).trim()) : emp);
-  const code = (v) => (v && String(v).trim() ? "<code>" + esc(String(v).trim()) + "</code>" : emp);
-  const quote = f.desc.trim()
-    ? "<blockquote>" + esc(f.desc.trim()).split("\n").join("<br>") + "</blockquote>"
-    : emp;
-  const link = (label, v) => (v && String(v).trim()
-    ? '<a href="' + esc(String(v).trim()) + '" target="_blank" rel="noopener">' + label + "</a>"
-    : emp);
-  const shots = f.shots.trim()
-    ? "<ol>" + f.shots.trim().split("\n").map((s) => "<li>" + esc(s.trim()) + "</li>").join("") + "</ol>"
-    : emp;
-  const sec = (h, body) => "<h4>" + h + "</h4><div>" + body + "</div>";
-  $("ticketPreview").innerHTML =
-    sec("Request type", '<span class="pv-req">' + req + "</span>") +
-    sec("App ID", code(f.appId)) +
-    sec("App title", "<strong>" + (f.title.trim() ? esc(f.title.trim()) : emp) + "</strong>") +
-    sec("Category", code(f.category)) +
-    sec("Description", quote) +
-    sec("App URL", link("Open the app", f.url)) +
-    sec("Ad gateway URL", link("Open the ad", f.adUrl)) +
-    sec("Icon URL", link("View the icon", f.icon)) +
-    sec("Screenshots", shots) +
-    sec("Confirmation", '<span class="pv-check">☑ I have the right to share this app and its links</span>');
-}
-["sAction", "sAppId", "sTitle", "sCategory", "sDesc", "sUrl", "sAdUrl", "sIcon", "sShots"].forEach((id) => {
-  $(id).addEventListener("input", renderPreview);
-  $(id).addEventListener("change", renderPreview);
-});
-renderPreview();
-
 $("openIssueBtn").addEventListener("click", () => {
   const f = filing();
   if (f.action !== "new" && !f.appId) { showToast("App ID is required for edits and removals.", "error"); return; }
@@ -390,6 +369,32 @@ $("trackBtn").addEventListener("click", async () => {
   } catch { list.innerHTML = '<p class="helper">Lookup failed — try again in a minute.</p>'; }
 });
 $("tUser").addEventListener("keydown", (e) => { if (e.key === "Enter") $("trackBtn").click(); });
+
+function renderPreview() {
+  const f = filing();
+  const req = f.action === "edit" ? "Edit app" : f.action === "delete" ? "Delete app" : "New app";
+  const dim = (t) => '<span class="pv-dim">' + t + "</span>";
+  const warn = (t) => '<span class="pv-warn">' + t + "</span>";
+  const row = (h, v) => '<div class="pv-sec"><div class="pv-h">' + h + "</div><div class=\"pv-v\">" + v + "</div></div>";
+  const optLink = (label, v) => v ? '<a href="' + esc(v) + '" target="_blank" rel="noopener">' + label + "</a> · " + dim(esc(v)) : dim("—");
+  const shots = f.shots.split("\n").map((s) => s.trim()).filter(Boolean);
+  let h = row("Request type", "<b>" + req + "</b>");
+  if (f.action !== "new") h += row("App ID", f.appId ? "<code>" + esc(f.appId) + "</code>" : warn("App ID required — pick from the live list"));
+  h += row("App title", f.title ? "<b>" + esc(f.title) + "</b>" : (f.action === "delete" ? dim("—") : warn("Title required")));
+  h += row("Category", "<code>" + esc(f.category) + "</code>");
+  h += row("Description", f.desc ? "<div class=\"pv-quote\">" + esc(f.desc).replace(/\n/g, "<br>") + "</div>" : (f.action === "delete" ? dim("—") : warn("Description required")));
+  h += row("App URL", f.url ? '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">Open the app</a>' : (f.action === "delete" ? dim("—") : warn("App URL required")));
+  if (f.action !== "delete") {
+    h += row("Ad gateway URL", optLink("Open the ad", f.adUrl));
+    h += row("Icon URL", optLink("View the icon", f.icon));
+    h += row("Screenshots", shots.length ? '<ol class="pv-ol">' + shots.map((s) => "<li>" + esc(s) + "</li>").join("") + "</ol>" : dim("—"));
+  }
+  h += '<div class="pv-sec"><div class="pv-v pv-check"><i class="fas fa-check-square"></i> I have the right to share this app and its links</div></div>';
+  $("ticketPreview").innerHTML = '<div class="pv-title">' + esc(f.title || f.appId || "new submission") + "</div>" + h;
+}
+$("submit").addEventListener("input", renderPreview);
+sAction.addEventListener("change", renderPreview);
+renderPreview();
 
 // Prove whether GitHub actually has the form files. No guessing.
 (async () => {
