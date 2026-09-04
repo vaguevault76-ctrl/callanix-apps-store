@@ -1,40 +1,20 @@
-name: Submit an app
-description: Propose a new app, edit an existing one, or request a removal. No repo access needed.
-labels: ["app-submission"]
+name: New app
+description: Propose a new app for the Callanix Store. No repo access needed.
+title: ""
+labels: ["app-submission", "req-new"]
 body:
-  - type: dropdown
-    id: request
-    attributes:
-      label: Request type
-      description: What should happen with this app?
-      options:
-        - New app
-        - Edit app
-        - Delete app
-    validations:
-      required: true
-  - type: input
-    id: app-id
-    attributes:
-      label: App ID (for Edit / Delete only)
-      description: Find it in the store URL data or your earlier submission receipt. Leave empty for new apps.
-      placeholder: e.g. app-42
   - type: input
     id: app-title
     attributes:
       label: App title
-      description: Display name as it should appear in the store. (Not needed for removals.)
+      description: Display name as it should appear in the store.
       placeholder: e.g. My Amazing App
-  - type: dropdown
+  - type: input
     id: category
     attributes:
       label: Category
-      options:
-        - Games
-        - Tools
-        - Entertainment
-        - Education
-        - Other
+      description: One word.
+      placeholder: Games, Tools, Entertainment, Education or Other
   - type: textarea
     id: description
     attributes:

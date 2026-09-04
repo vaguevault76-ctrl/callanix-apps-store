@@ -204,6 +204,11 @@ export function decideIssues(issues, apps, priv, mode) {
       continue;
     }
     const sub = parseBody(issue.body);
+    // The ticket's own form declares the request via labels; fall back to
+    // the old body section for tickets filed with the retired template.
+    if (labels.has("req-edit")) sub.request = "edit";
+    else if (labels.has("req-delete")) sub.request = "delete";
+    else if (labels.has("req-new")) sub.request = "new";
     const errors = validate(sub, apps, sub.request);
     if (errors.length) {
       results.push({ issue: issue.number, action: "needs-fix", errors });
@@ -415,6 +420,18 @@ function selftest() {
     "approve"
   );
   assert.equal(d.results[0].action, "published");
+
+  // request type comes from the ticket's own form labels, even when the
+  // body still says "New app" (retired single template)
+  let a4 = [{ id: "app-7", title: "Old", submittedBy: "stranger" }];
+  d = decideIssues(
+    [fake(14, "Stranger", ["app-submission", "req-delete"], body({ appId: "app-7" }))],
+    a4,
+    new Set(["owner"]),
+    "auto"
+  );
+  assert.equal(d.results[0].action, "deleted");
+  assert.equal(a4.length, 0);
 
   // HTML in text fields is stripped on write
   const h = [];

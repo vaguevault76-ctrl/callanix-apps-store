@@ -1,0 +1,23 @@
+name: Delete app
+description: Remove an app from the store. Only the original submitter (or a publisher) can do this.
+title: ""
+labels: ["app-submission", "req-delete"]
+body:
+  - type: markdown
+    attributes:
+      value: The app and its screenshots leave the store within minutes of this ticket being processed.
+  - type: input
+    id: app-id
+    attributes:
+      label: App ID
+      description: The ID from your publish receipt (e.g. app-7). Easiest: pick the app in the Dev Portal.
+      placeholder: e.g. app-7
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I understand this removal is permanent
+          required: true

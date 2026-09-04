@@ -241,12 +241,11 @@ function filing() {
   };
 }
 
+const TEMPLATES = { new: "new-app.yml", edit: "edit-app.yml", delete: "delete-app.yml" };
 function issueUrl(f) {
-  const label = f.action === "edit" ? "Edit app" : f.action === "delete" ? "Delete app" : "New app";
   const p = new URLSearchParams({
-    template: "app-submission.yml",
+    template: TEMPLATES[f.action] || TEMPLATES.new,
     title: f.title || f.appId || "new submission",
-    request: label,
     "app-id": f.appId,
     "app-title": f.title,
     category: f.category,

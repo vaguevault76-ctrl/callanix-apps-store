@@ -59,7 +59,7 @@ or "approve" (strangers wait for the `approved` label).
 
 - **Theme colors**: Edit `#6c5ce7` (purple) and `#00cec9` (teal) in the CSS
 - **Ad timer**: Change `let count = 5;` in `user/index.html`
-- **Password**: Generate a new SHA-256 hash → update `config.js`
+- **Approval mode**: Set `"mode": "auto"` or `"approve"` in `data/publishers.json`
 
 ## Low-End Device Optimization
 

@@ -1,0 +1,64 @@
+name: Edit app
+description: Change the title, links, or screenshots of an app already in the store.
+title: ""
+labels: ["app-submission", "req-edit"]
+body:
+  - type: input
+    id: app-id
+    attributes:
+      label: App ID
+      description: The ID from your publish receipt (e.g. app-7). Easiest: pick the app in the Dev Portal and let it fill everything.
+      placeholder: e.g. app-7
+    validations:
+      required: true
+  - type: input
+    id: app-title
+    attributes:
+      label: App title
+      description: Display name as it should appear in the store.
+      placeholder: e.g. My Amazing App
+  - type: input
+    id: category
+    attributes:
+      label: Category
+      description: One word.
+      placeholder: Games, Tools, Entertainment, Education or Other
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: One or two lines users will read before downloading.
+      placeholder: What does this app do?
+  - type: input
+    id: app-url
+    attributes:
+      label: App URL
+      description: The final destination link users land on.
+      placeholder: https://yourapp.com
+  - type: input
+    id: ad-url
+    attributes:
+      label: Ad gateway URL (optional)
+      description: Shown for 5 seconds before the app link. Leave empty for a direct link.
+      placeholder: https://ad-link.com/your-ad
+  - type: input
+    id: icon-url
+    attributes:
+      label: Icon URL (optional)
+      description: Square badge shown on the store row.
+      placeholder: https://example.com/icon.png
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshot URLs (optional)
+      description: One URL per line, up to 5. Leave empty to keep the current ones.
+      placeholder: |
+        https://example.com/shot1.jpg
+        https://example.com/shot2.jpg
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have the right to share this app and its links
+          required: true
