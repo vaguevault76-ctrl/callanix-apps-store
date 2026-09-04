@@ -168,9 +168,21 @@ function privilegedUsers() {
   return set;
 }
 
+// "auto" = every valid ticket publishes instantly, no approval taps.
+// "approve" = strangers wait for the `approved` label; VIPs skip the wait.
+export function publishMode() {
+  return loadJson(PUBLISHERS, {}).mode === "approve" ? "approve" : "auto";
+}
+
+export function approvedFor({ labels, author, priv, mode }) {
+  if (labels.has("approved") || priv.has((author || "").toLowerCase())) return true;
+  return mode !== "approve";
+}
+
 async function applyPhase() {
   const apps = loadJson(LINKS, []);
   const priv = privilegedUsers();
+  const mode = publishMode();
   const issues = await api(
     `/repos/${REPO}/issues?labels=app-submission&state=open&per_page=100`
   );
@@ -182,8 +194,7 @@ async function applyPhase() {
     if (labels.has("published") || labels.has("needs-fix")) continue;
     const author = (issue.user?.login || "").toLowerCase();
     const isPriv = priv.has(author);
-    const approved = labels.has("approved") || isPriv;
-    if (!approved) {
+    if (!approvedFor({ labels, author, priv, mode })) {
       results.push({ issue: issue.number, action: "pending" });
       continue;
     }
@@ -321,6 +332,13 @@ function selftest() {
   assert.equal(applySubmission(dsub, apps, 44, "Stranger", false).ok, false);
   assert.equal(applySubmission(dsub, apps, 44, "anyone", true).action, "deleted");
   assert.equal(apps.length, 0);
+
+  // approval modes
+  const priv = new Set(["owner"]);
+  assert.equal(approvedFor({ labels: new Set(), author: "stranger", priv, mode: "auto" }), true);
+  assert.equal(approvedFor({ labels: new Set(), author: "stranger", priv, mode: "approve" }), false);
+  assert.equal(approvedFor({ labels: new Set(["approved"]), author: "stranger", priv, mode: "approve" }), true);
+  assert.equal(approvedFor({ labels: new Set(), author: "owner", priv, mode: "approve" }), true);
 
   console.log("selftest: all fixtures passed");
 }

@@ -152,9 +152,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="sub">REPO IS THE DATABASE · ROBOT IS THE PUBLISHER</div>
 <div class="steps">
 <li><i class="fas fa-check-circle"></i><b>1 — File.</b> Fill the form, open the ticket, press Submit on GitHub. needs only a free GitHub account — no repo access, no password.</li>
-<li><i class="fas fa-check-circle"></i><b>2 — Review.</b> New filers wait for one approval click. Trusted publishers in <b>data/publishers.json</b> board automatically.</li>
-<li><i class="fas fa-check-circle"></i><b>3 — Publish.</b> The Action validates the ticket, writes <b>data/links.json</b>, and stamps the ticket PUBLISHED with your app ID.</li>
-<li><i class="fas fa-check-circle"></i><b>4 — Live.</b> The user store refetches the file — your app boards within minutes. Edits and removals ride the same rails.</li>
+<li><i class="fas fa-check-circle"></i><b>2 — Robot check.</b> The publisher robot reads your ticket within about 5 minutes. If a field is wrong, it writes the reason on your ticket as NEEDS FIX.</li>
+<li><i class="fas fa-check-circle"></i><b>3 — Live.</b> Good tickets board automatically — no approval taps needed. The ticket gets stamped PUBLISHED with your app ID, and the user store shows it a few minutes later.</li>
+<li><i class="fas fa-check-circle"></i><b>4 — Control.</b> Bad apps can be removed with a Delete filing. If spam ever appears, the owner can switch on approvals with one word in <b>data/publishers.json</b> ("auto" → "approve").</li>
 </div>
 </div>
 </div>

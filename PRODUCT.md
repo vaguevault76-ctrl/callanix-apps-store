@@ -11,7 +11,7 @@ web
 Both equally:
 - End-users (primarily mobile, incl. low-end devices) discovering/browsing curated apps, games, tools — searching, filtering by category, viewing details/screenshots, downloading via ad-gateway redirect.
 - Any developer with a free GitHub account proposing apps via the open Dev Portal — filing new apps, edits, removals as submission tickets, tracking them to live.
-- Owner approving filings (one label click) and curating the allowlist; trusted publishers auto-approve via `data/publishers.json`.
+- Owner curating the allowlist and removing bad apps; default mode is instant boarding for everyone, strict approval mode is one word away in `data/publishers.json`.
 
 ## Product Purpose
 

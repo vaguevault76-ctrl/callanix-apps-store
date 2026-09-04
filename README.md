@@ -38,9 +38,13 @@ A dual-website app store platform — a public **User Store** and a private **De
 ## Publishing Pipeline
 
 ```
-dev/ form → GitHub Issue (app-submission) → approval label (or auto-approve)
-→ .github/workflows/publish.yml → validates → writes data/links.json
-→ commits → comments app ID + closes ticket → user/ refetches
+dev/ form → GitHub Issue (app-submission)
+→ .github/workflows/publish.yml (runs on ticket events + every 5 min)
+→ validates → writes data/links.json → commits
+→ comments app ID + closes ticket → user/ refetches
+
+Mode in data/publishers.json: "auto" (everyone boards instantly — default)
+or "approve" (strangers wait for the `approved` label).
 ```
 
 ## Security
