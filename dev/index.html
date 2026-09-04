@@ -96,7 +96,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 
 <div class="panel" id="submit">
 <h2><i class="fas fa-paper-plane"></i> New Filing</h2>
-<div class="sub">STEP 1 — FILL · STEP 2 — OPEN TICKET · STEP 3 — SUBMIT ON GITHUB</div>
+<div class="sub">STEP 1 — FILL · STEP 2 — OPEN TICKET · STEP 3 — SUBMIT ON GITHUB · <b id="formStatus">CHECKING FORMS…</b></div>
 <div class="form-group"><label>REQUEST TYPE *</label>
 <select id="sAction">
 <option value="new">New app</option>
@@ -242,9 +242,27 @@ function filing() {
 }
 
 const TEMPLATES = { new: "new-app.yml", edit: "edit-app.yml", delete: "delete-app.yml" };
-// The ticket's own form declares labels + request type server-side, so the
-// link only carries the title and the text fields (field id = param name).
+// Belt and suspenders: the form fields (filled when GitHub has the form
+// files) PLUS the full filing as the body (used when it doesn't). GitHub
+// ignores `body` whenever a template renders, and ignores unknown params,
+// so exactly one of the two ever takes effect — nothing is ever lost.
 // No `labels` param: outsiders lack label permission and GitHub 404s those URLs.
+function ticketBody(f) {
+  const req = f.action === "edit" ? "Edit app" : f.action === "delete" ? "Delete app" : "New app";
+  const opt = (v) => (v && String(v).trim() ? String(v).trim() : "_No response_");
+  return [
+    "### Request type", "", req, "",
+    "### App ID (for Edit / Delete only)", "", opt(f.appId), "",
+    "### App title", "", opt(f.title), "",
+    "### Category", "", opt(f.category), "",
+    "### Description", "", opt(f.desc), "",
+    "### App URL", "", opt(f.url), "",
+    "### Ad gateway URL (optional)", "", opt(f.adUrl), "",
+    "### Icon URL (optional)", "", opt(f.icon), "",
+    "### Screenshot URLs (optional)", "", f.shots.trim() ? f.shots.trim() : "_No response_", "",
+    "### Confirmation", "", "- [X] I have the right to share this app and its links", "",
+  ].join("\n");
+}
 function issueUrl(f) {
   const p = new URLSearchParams({
     template: TEMPLATES[f.action] || TEMPLATES.new,
@@ -258,6 +276,7 @@ function issueUrl(f) {
     "icon-url": f.icon,
     screenshots: f.shots,
     confirm: "0",
+    body: ticketBody(f),
   });
   return "https://github.com/" + OWNER + "/" + REPO + "/issues/new?" + p.toString();
 }
@@ -319,6 +338,27 @@ $("trackBtn").addEventListener("click", async () => {
   } catch { list.innerHTML = '<p class="helper">Lookup failed — try again in a minute.</p>'; }
 });
 $("tUser").addEventListener("keydown", (e) => { if (e.key === "Enter") $("trackBtn").click(); });
+
+// Prove whether GitHub actually has the form files. No guessing.
+(async () => {
+  const el = $("formStatus");
+  const need = ["new-app.yml", "edit-app.yml", "delete-app.yml"];
+  try {
+    const res = await fetch(API + "/contents/.github/ISSUE_TEMPLATE");
+    if (!res.ok) throw new Error("http");
+    const names = (await res.json()).map((f) => f.name);
+    if (need.every((n) => names.includes(n))) {
+      el.textContent = "FORMS READY";
+      el.style.color = "var(--tea)";
+    } else {
+      el.textContent = "FORMS MISSING — PUSH THE .github FOLDER";
+      el.style.color = "var(--red)";
+    }
+  } catch {
+    el.textContent = "CANNOT REACH GITHUB";
+    el.style.color = "var(--amber)";
+  }
+})();
 </script>
 </body>
 </html>
