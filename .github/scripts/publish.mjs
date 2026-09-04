@@ -473,6 +473,20 @@ function selftest() {
   assert.equal(d.results[0].action, "published");
   assert.equal(a5[0].id, "app-15");
 
+  // form-style tickets carry no Request-type section; labels decide
+  const formBody = portalBody
+    .replace("### Request type\n\nNew app\n\n", "")
+    .replace("### App ID (for Edit / Delete only)\n\n_No response_", "### App ID (for Edit / Delete only)\n\napp-7");
+  let a6 = [{ id: "app-7", title: "Old", category: "tools", description: "d", url: "https://e.com", submittedBy: "stranger" }];
+  d = decideIssues(
+    [{ number: 16, user: { login: "stranger" }, labels: [{ name: "app-submission" }, { name: "req-edit" }], body: formBody.replace("Portal App", "New Name") }],
+    a6,
+    new Set(["owner"]),
+    "auto"
+  );
+  assert.equal(d.results[0].action, "updated");
+  assert.equal(a6[0].title, "New Name");
+
   // HTML in text fields is stripped on write
   const h = [];
   applySubmission(
