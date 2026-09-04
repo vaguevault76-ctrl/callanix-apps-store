@@ -79,7 +79,22 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 .cat-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--pur2);letter-spacing:.2em}
 .modal-desc{color:var(--mut);font-size:14.5px;line-height:1.7;margin-bottom:18px;max-width:68ch}
 .modal-screenshots{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:22px}
-.modal-screenshots img{width:100%;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
+.modal-screenshots img{width:100%;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:zoom-in;transition:.22s}
+.modal-screenshots img:hover{border-color:var(--pur);transform:scale(1.03)}
+.shot-hint{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--dim);margin:-12px 0 20px}
+.shot-hint i{color:var(--pur2);margin-right:6px}
+.card-shots img{cursor:zoom-in}
+.lightbox{position:fixed;inset:0;background:rgba(3,4,6,.96);z-index:400;display:none;align-items:center;justify-content:center;flex-direction:column;padding:22px}
+.lightbox.show{display:flex}
+.lightbox img{max-width:min(1100px,94vw);max-height:78vh;object-fit:contain;border-radius:14px;border:1px solid var(--line);background:#0b0d12}
+.lb-top{width:min(1100px,94vw);display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--dim)}
+.lb-top b{color:var(--pur2);font-variant-numeric:tabular-nums}
+.lb-close{background:#141821;border:1px solid var(--line);color:var(--paper);width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:16px}
+.lb-close:hover{border-color:var(--pur)}
+.lb-nav{display:flex;gap:10px;margin-top:14px;align-items:center}
+.lb-nav button{background:#141821;border:1px solid var(--line);color:var(--paper);padding:11px 22px;border-radius:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em}
+.lb-nav button:hover:not(:disabled){border-color:var(--pur)}
+.lb-nav button:disabled{opacity:.35;cursor:default}
 .modal-btn{width:100%;padding:16px;border-radius:13px;border:none;background:var(--pur);color:#fff;font-size:15px;font-weight:700;letter-spacing:.06em;cursor:pointer;font-family:'JetBrains Mono',monospace}
 .modal-btn:hover{background:var(--pur2)}
 .modal-close{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:#0b0d12;color:var(--mut);cursor:pointer;font-size:15px}
@@ -155,6 +170,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 </div>
 <p class="modal-desc" id="modalDesc"></p>
 <div class="modal-screenshots" id="modalScreenshots"></div>
+<div class="shot-hint"><i class="fas fa-expand"></i>TAP ANY SHOT FOR FULL SCREEN</div>
 <button class="modal-btn" id="modalBtn"><i class="fas fa-download"></i>&nbsp;BOARD — VISIT APP</button>
 </div>
 <div class="perf"><span>VERIFY → BOARD</span><span>SLIP U·<span id="slipNo">000</span></span></div>
@@ -169,6 +185,11 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 <div class="ad-progress"><div class="ad-progress-bar" id="adProgress"></div></div>
 <button class="ad-continue" id="adContinue"><i class="fas fa-rocket"></i>&nbsp;CONTINUE TO APP</button>
 </div>
+</div>
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Fullscreen screenshot viewer">
+<div class="lb-top"><span id="lbCount">SHOT 1 / 1</span><button class="lb-close" id="lbClose" aria-label="Close fullscreen"><i class="fas fa-times"></i></button></div>
+<img id="lbImg" src="" alt="App screenshot fullscreen">
+<div class="lb-nav"><button id="lbPrev" aria-label="Previous shot"><i class="fas fa-arrow-left"></i> PREV</button><button id="lbNext" aria-label="Next shot">NEXT <i class="fas fa-arrow-right"></i></button></div>
 </div>
 <div class="footer">© 2026 CALLANIX STORE · CONCOURSE U · BUILT FOR LOW-END · <a href="../">HALL 01</a></div>
 <script>
@@ -200,6 +221,14 @@ const adModal = document.getElementById('adModal');
 const adTimer = document.getElementById('adTimer');
 const adProgress = document.getElementById('adProgress');
 const adContinue = document.getElementById('adContinue');
+const lightbox = document.getElementById('lightbox');
+const lbImg = document.getElementById('lbImg');
+const lbCount = document.getElementById('lbCount');
+const lbClose = document.getElementById('lbClose');
+const lbPrev = document.getElementById('lbPrev');
+const lbNext = document.getElementById('lbNext');
+let lbList = [];
+let lbIndex = 0;
 const DATA_URLS = [
 'https://github.com/vaguevault76-ctrl/callanix-apps-store/blob/cd1eeed24c7acebed42b96dccfc3743424ee561d/data/links.json',
 '../data/links.json'
@@ -256,13 +285,14 @@ if (filteredApps.length === 0) { emptyState.classList.add('show');navCount.textC
 emptyState.classList.remove('show');navCount.textContent = filteredApps.length;if(liveCount)liveCount.textContent = filteredApps.length+' ON BOARD';
 filteredApps.forEach((app, i) => {
 const card = document.createElement('div');card.className = 'app-card';card.style.animationDelay = (Math.min(i,12) * 0.05) + 's';
-const shots = (app.screenshots && app.screenshots.length) ? '<div class="card-shots">'+app.screenshots.slice(0,3).map(s => '<img src="'+s+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">').join('')+'</div>' : '';
+const shots = (app.screenshots && app.screenshots.length) ? '<div class="card-shots">'+app.screenshots.slice(0,3).map((s,si) => '<img src="'+s+'" alt="Screenshot '+(si+1)+'" loading="lazy" data-full="'+si+'" onerror="this.style.display=\'none\'">').join('')+'</div>' : '';
 card.innerHTML =
 '<div class="card-top"><img class="card-icon" src="'+(app.iconUrl||'https://via.placeholder.com/52/6c5ce7/ffffff?text=A')+'" alt="" loading="lazy" onerror="this.src=\'https://via.placeholder.com/52/6c5ce7/ffffff?text=?\'">'+
 '<div><div class="card-code">FLAP ' + String(i+1).padStart(2,'0') + ' · U·HALL</div><div class="card-title">'+(app.title||'Untitled').toUpperCase()+'</div><div class="card-category">'+(app.category||'other').toUpperCase()+'</div></div></div>'+
 '<div class="card-desc">'+(app.description||'No description available.')+'</div>'+shots+
 '<div class="card-footer"><span class="card-time">'+(app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'NO DATE')+' · <span class="status-pill">ON TIME</span></span><button class="card-btn" data-id="'+app.id+'">OPEN</button></div>';
 card.querySelector('.card-btn').addEventListener('click', (e) => { e.stopPropagation();openModal(app); });
+card.querySelectorAll('.card-shots img').forEach(img => { img.addEventListener('click', (e) => { e.stopPropagation();openLightbox(app.screenshots, parseInt(img.dataset.full||'0',10)); }); });
 card.addEventListener('click', () => openModal(app));grid.appendChild(card);
 });
 }
@@ -276,13 +306,37 @@ modalDesc.textContent = app.description || 'No description available.';
 document.getElementById('slipNo').textContent = String((app.id||'0')).slice(-3).toUpperCase() || '000';
 modalScreenshots.innerHTML = '';
 if (app.screenshots && app.screenshots.length) {
-app.screenshots.forEach(s => { const img = document.createElement('img');img.src = s;img.loading = 'lazy';img.onerror = function(){ this.style.display='none'; };modalScreenshots.appendChild(img); });
+app.screenshots.forEach((s, si) => { const img = document.createElement('img');img.src = s;img.loading = 'lazy';img.alt = 'Screenshot '+(si+1);img.onerror = function(){ this.style.display='none'; };img.addEventListener('click', () => openLightbox(app.screenshots, si));modalScreenshots.appendChild(img); });
 } else { modalScreenshots.innerHTML = '<p style="color:var(--dim);font-size:13px;">No screenshots on this slip.</p>'; }
 modalOverlay.classList.add('show');document.body.style.overflow = 'hidden';
 }
 modalClose.addEventListener('click', () => { modalOverlay.classList.remove('show');document.body.style.overflow = ''; });
 modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) { modalOverlay.classList.remove('show');document.body.style.overflow = ''; } });
-document.addEventListener('keydown', e => { if(e.key==='Escape'){modalOverlay.classList.remove('show');adModal.classList.remove('show');document.body.style.overflow='';} });
+function openLightbox(list, idx) {
+if (!list || !list.length) return;
+lbList = list;lbIndex = Math.max(0, Math.min(idx||0, list.length-1));
+renderLightbox();lightbox.classList.add('show');document.body.style.overflow = 'hidden';
+}
+function renderLightbox() {
+lbImg.src = lbList[lbIndex];
+lbCount.textContent = 'SHOT ' + (lbIndex+1) + ' / ' + lbList.length;
+lbPrev.disabled = lbIndex === 0;lbNext.disabled = lbIndex === lbList.length-1;
+}
+function closeLightbox() { lightbox.classList.remove('show');if(!modalOverlay.classList.contains('show'))document.body.style.overflow=''; }
+lbClose.addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+lbPrev.addEventListener('click', (e) => { e.stopPropagation();if(lbIndex>0){lbIndex--;renderLightbox();} });
+lbNext.addEventListener('click', (e) => { e.stopPropagation();if(lbIndex<lbList.length-1){lbIndex++;renderLightbox();} });
+document.addEventListener('keydown', e => {
+if (e.key==='F12' || (e.ctrlKey && e.shiftKey && ['I','C','J'].includes(e.key)) || (e.ctrlKey && ['u','s'].includes(e.key))) return;
+if(lightbox.classList.contains('show')){
+if(e.key==='Escape')closeLightbox();
+if(e.key==='ArrowLeft'&&lbIndex>0){lbIndex--;renderLightbox();}
+if(e.key==='ArrowRight'&&lbIndex<lbList.length-1){lbIndex++;renderLightbox();}
+return;
+}
+if(e.key==='Escape'){modalOverlay.classList.remove('show');adModal.classList.remove('show');document.body.style.overflow='';}
+});
 modalBtn.addEventListener('click', () => {
 modalOverlay.classList.remove('show');document.body.style.overflow = '';
 if (!currentApp) return;

@@ -27,20 +27,29 @@ A dual-website app store platform — a public **User Store** and a private **De
 - Responsive, works on low-end devices
 - Anti-copy protections (no right-click, no F12, anti-devtools)
 
-### Developer Portal (Password Protected)
-- SHA-256 password gate
-- Add / Edit / Delete apps with form
-- Dashboard stats (total apps, categories, ad count)
-- Local auto-save (no data loss)
-- Publish to GitHub via clipboard + editor (no API tokens)
-- JSON export/import for backup
+### Developer Portal (Open — No Password, No Repo Access)
+- Anyone with a free GitHub account can file: new app, edit, or removal
+- Form opens a prefilled submission ticket (GitHub Issue) — one click to send
+- Track filings live: pending → queued → live, with fix requests
+- A GitHub Action validates, writes `data/links.json`, and stamps tickets published
+- Trusted publishers in `data/publishers.json` board automatically; others need one approval label
+- No shared passwords, no tokens, no backend — repo is the database
+
+## Publishing Pipeline
+
+```
+dev/ form → GitHub Issue (app-submission) → approval label (or auto-approve)
+→ .github/workflows/publish.yml → validates → writes data/links.json
+→ commits → comments app ID + closes ticket → user/ refetches
+```
 
 ## Security
 
-- Dev password is SHA-256 hashed in `config.js`
-- No GitHub tokens or API keys stored anywhere
-- Anti-copy measures throughout both sites
-- GitHub Pages provides free HTTPS encryption
+- No passwords or tokens anywhere — identity is the submitter's GitHub account
+- Only the Action (built-in `GITHUB_TOKEN`) can write `data/links.json`
+- Edits/deletes allowed for the original submitter only (plus allowlisted publishers)
+- Validation caps: 80-char titles, 5 screenshots, URL shapes, confirmation checkbox
+- Anti-copy measures on the user store; GitHub Pages provides free HTTPS encryption
 
 ## Customization
 

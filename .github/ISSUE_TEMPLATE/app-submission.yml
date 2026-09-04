@@ -1,0 +1,79 @@
+name: Submit an app
+description: Propose a new app, edit an existing one, or request a removal. No repo access needed.
+title: "[app] "
+labels: ["app-submission"]
+body:
+  - type: dropdown
+    id: request
+    attributes:
+      label: Request type
+      description: What should happen with this app?
+      options:
+        - New app
+        - Edit app
+        - Delete app
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: app-id
+    attributes:
+      label: App ID (for Edit / Delete only)
+      description: Find it in the store URL data or your earlier submission receipt. Leave empty for new apps.
+      placeholder: e.g. app-42
+  - type: input
+    id: app-title
+    attributes:
+      label: App title
+      description: Display name as it should appear in the store. (Not needed for removals.)
+      placeholder: e.g. My Amazing App
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Games
+        - Tools
+        - Entertainment
+        - Education
+        - Other
+      default: 4
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: One or two lines users will read before downloading.
+      placeholder: What does this app do?
+  - type: input
+    id: app-url
+    attributes:
+      label: App URL
+      description: The final destination link users land on.
+      placeholder: https://yourapp.com
+  - type: input
+    id: ad-url
+    attributes:
+      label: Ad gateway URL (optional)
+      description: Shown for 5 seconds before the app link. Leave empty for a direct link.
+      placeholder: https://ad-link.com/your-ad
+  - type: input
+    id: icon-url
+    attributes:
+      label: Icon URL (optional)
+      description: Square badge shown on the store row.
+      placeholder: https://example.com/icon.png
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshot URLs (optional)
+      description: One URL per line, up to 5. Users can open each in full screen.
+      placeholder: |
+        https://example.com/shot1.jpg
+        https://example.com/shot2.jpg
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have the right to share this app and its links
+          required: true
