@@ -65,6 +65,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .steps li{font-size:13.5px;color:var(--mut);background:#0b0d12;border:1px solid var(--line);border-radius:10px;padding:12px 15px;list-style:none;line-height:1.6}
 .steps li i{color:var(--tea);margin-right:8px}
 .steps li b{color:var(--paper)}
+.preview{background:#0b0d12;border:1px solid var(--line);border-radius:13px;padding:22px 24px;font-size:14px;line-height:1.65}
+.preview h4{font-size:15px;margin:16px 0 6px;color:var(--paper)}
+.preview h4:first-child{margin-top:0}
+.preview .pv-req{font-weight:800}
+.preview code{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:#1a1f2a;padding:2px 8px;border-radius:6px;color:var(--pur2)}
+.preview blockquote{border-left:3px solid var(--steel);padding:2px 0 2px 14px;color:var(--mut);margin:2px 0}
+.preview a{color:var(--pur2)}
+.preview ol{margin:2px 0 2px 22px;color:var(--mut)}
+.preview .pv-check{color:var(--tea)}
+.preview .pv-empty{color:var(--dim);font-style:italic}
 .toast{position:fixed;bottom:28px;right:28px;z-index:9999;padding:14px 22px;border-radius:12px;font-size:13.5px;font-weight:600;transform:translateY(90px);opacity:0;transition:.35s;pointer-events:none;font-family:'JetBrains Mono',monospace;max-width:min(420px,calc(100vw - 40px))}
 .toast.show{transform:none;opacity:1}
 .toast.success{background:#07211f;border:1px solid rgba(0,206,201,.5);color:var(--tea)}
@@ -131,7 +141,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="form-group"><label>ICON URL (OPTIONAL)</label><input type="url" id="sIcon" placeholder="https://example.com/icon.png"></div>
 <div class="form-group"><label>SCREENSHOTS — ONE PER LINE, MAX 5</label><textarea id="sShots" placeholder="https://example.com/shot1.jpg" rows="3"></textarea></div>
 </div>
-<div class="actions">
+<h3 style="font-family:'Barlow Condensed',sans-serif;font-size:22px;letter-spacing:.05em;margin:22px 0 4px;">TICKET PREVIEW</h3>
+<div class="helper" style="margin-bottom:12px">Live — exactly how the ticket will look on GitHub.</div>
+<div class="preview" id="ticketPreview" aria-live="polite"></div>
+<div class="actions" style="margin-top:16px">
 <button class="submit-btn" id="openIssueBtn"><i class="fas fa-external-link-alt"></i> OPEN GITHUB TICKET</button>
 <button class="ghost-btn" id="copyBtn"><i class="fas fa-copy"></i> COPY DETAILS</button>
 </div>
@@ -285,6 +298,40 @@ function issueUrl(f) {
   });
   return "https://github.com/" + OWNER + "/" + REPO + "/issues/new?" + p.toString();
 }
+
+function renderPreview() {
+  const f = filing();
+  const req = f.action === "edit" ? "Edit app" : f.action === "delete" ? "Delete app" : "New app";
+  const emp = '<span class="pv-empty">_No response_</span>';
+  const val = (v) => (v && String(v).trim() ? esc(String(v).trim()) : emp);
+  const code = (v) => (v && String(v).trim() ? "<code>" + esc(String(v).trim()) + "</code>" : emp);
+  const quote = f.desc.trim()
+    ? "<blockquote>" + esc(f.desc.trim()).split("\n").join("<br>") + "</blockquote>"
+    : emp;
+  const link = (label, v) => (v && String(v).trim()
+    ? '<a href="' + esc(String(v).trim()) + '" target="_blank" rel="noopener">' + label + "</a>"
+    : emp);
+  const shots = f.shots.trim()
+    ? "<ol>" + f.shots.trim().split("\n").map((s) => "<li>" + esc(s.trim()) + "</li>").join("") + "</ol>"
+    : emp;
+  const sec = (h, body) => "<h4>" + h + "</h4><div>" + body + "</div>";
+  $("ticketPreview").innerHTML =
+    sec("Request type", '<span class="pv-req">' + req + "</span>") +
+    sec("App ID", code(f.appId)) +
+    sec("App title", "<strong>" + (f.title.trim() ? esc(f.title.trim()) : emp) + "</strong>") +
+    sec("Category", code(f.category)) +
+    sec("Description", quote) +
+    sec("App URL", link("Open the app", f.url)) +
+    sec("Ad gateway URL", link("Open the ad", f.adUrl)) +
+    sec("Icon URL", link("View the icon", f.icon)) +
+    sec("Screenshots", shots) +
+    sec("Confirmation", '<span class="pv-check">☑ I have the right to share this app and its links</span>');
+}
+["sAction", "sAppId", "sTitle", "sCategory", "sDesc", "sUrl", "sAdUrl", "sIcon", "sShots"].forEach((id) => {
+  $(id).addEventListener("input", renderPreview);
+  $(id).addEventListener("change", renderPreview);
+});
+renderPreview();
 
 $("openIssueBtn").addEventListener("click", () => {
   const f = filing();
