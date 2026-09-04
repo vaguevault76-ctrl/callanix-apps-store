@@ -50,7 +50,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .ghost-btn{padding:13px 24px;border-radius:11px;border:1px solid var(--line);background:#1a1f2a;color:var(--mut);font-size:13px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap}
 .ghost-btn:hover{color:#fff;border-color:var(--pur)}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
-.sub-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:linear-gradient(180deg,var(--flap),var(--flap2));border:1px solid var(--line);border-radius:13px;margin-bottom:9px}
+.sub-item{display:flex;flex-direction:column;gap:6px;padding:14px 16px;background:linear-gradient(180deg,var(--flap),var(--flap2));border:1px solid var(--line);border-radius:13px;margin-bottom:9px}
+.sub-row{display:flex;align-items:center;gap:14px;width:100%}
+.botmsg{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mut);background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:9px 12px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.botmsg .botwho{color:var(--pur2);letter-spacing:.1em}
 .sub-item .info{flex:1;min-width:0}
 .sub-item .name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sub-item .name a{color:var(--paper);text-decoration:none}
@@ -198,7 +201,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="sub">REPO IS THE DATABASE · ROBOT IS THE PUBLISHER</div>
 <div class="steps">
 <li><i class="fas fa-check-circle"></i><b>1 — Connect once.</b> Paste a token (this repo, Issues read+write). It stays in your browser. Then FILE FROM HERE sends tickets straight from this page — GitHub never opens.</li>
-<li><i class="fas fa-check-circle"></i><b>2 — Robot check.</b> The publisher robot reads your ticket within about 5 minutes. If a field is wrong, it writes the reason on your ticket as NEEDS FIX.</li>
+<li><i class="fas fa-check-circle"></i><b>2 — Robot check.</b> The publisher robot reads your ticket within about 5 minutes. Its reply (app ID, or what to fix) appears right under your filing in TRACK — no need to open GitHub.</li>
 <li><i class="fas fa-check-circle"></i><b>3 — Live.</b> Good tickets board automatically — no approval taps needed. The ticket gets stamped PUBLISHED with your app ID, and the user store shows it a few minutes later.</li>
 <li><i class="fas fa-check-circle"></i><b>4 — Control.</b> Bad apps can be removed with a Delete filing. If spam ever appears, the owner can switch on approvals with one word in <b>data/publishers.json</b> ("auto" → "approve").</li>
 </div>
@@ -374,17 +377,32 @@ $("trackBtn").addEventListener("click", async () => {
     const mine = issues.filter((i) => (i.user?.login || "").toLowerCase() === user && !i.pull_request);
     if (!mine.length) { list.innerHTML = '<p class="helper">No filings from @' + user + " yet.</p>"; return; }
     list.innerHTML = "";
-    mine.slice(0, 30).forEach((i) => {
+    for (const i of mine.slice(0, 10)) {
       const [label, cls] = statusOf(i);
       const div = document.createElement("div");
       div.className = "sub-item";
       div.innerHTML =
-        '<div class="info"><div class="name"><a href="' + i.html_url + '" target="_blank" rel="noopener">' +
+        '<div class="sub-row"><div class="info"><div class="name"><a href="' + i.html_url + '" target="_blank" rel="noopener">' +
         (i.title || "(untitled)").replace(/</g, "&lt;") + '</a></div><div class="meta">#' + i.number +
         " · " + new Date(i.updated_at).toLocaleDateString() + "</div></div>" +
-        '<span class="chip ' + cls + '">' + label + "</span>";
+        '<span class="chip ' + cls + '">' + label + "</span></div>";
       list.appendChild(div);
-    });
+      const spoken = i.state === "closed" || (i.labels || []).some((l) => ["needs-fix", "approved", "published"].includes(l.name));
+      if (spoken) {
+        try {
+          const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, getToken());
+          if (comments.length) {
+            const last = comments[comments.length - 1];
+            let t = String(last.body || "").replace(/</g, "&lt;");
+            if (t.length > 240) t = t.slice(0, 240) + "…";
+            const note = document.createElement("div");
+            note.className = "botmsg";
+            note.innerHTML = '<span class="botwho">BOT · ' + esc((last.user && last.user.login) || "robot") + "</span><br>" + t;
+            div.appendChild(note);
+          }
+        } catch {}
+      }
+    }
   } catch { list.innerHTML = '<p class="helper">Lookup failed — try again in a minute.</p>'; }
 });
 $("tUser").addEventListener("keydown", (e) => { if (e.key === "Enter") $("trackBtn").click(); });
