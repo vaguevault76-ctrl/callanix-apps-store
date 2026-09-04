@@ -1,233 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Callanix Store - Apps & Games</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Callanix Store — Departures Board</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-body { font-family: 'Inter', sans-serif; background: #000; color: #fff; overflow-x: hidden; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0a; }
-::-webkit-scrollbar-thumb { background: #6c5ce7; border-radius: 3px; }
-
-/* Anti-copy */
-body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-img { -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none; -o-user-drag: none; user-drag: none; }
-
-/* Background */
-.bg-glow { position: fixed; border-radius: 50%; filter: blur(150px); opacity: 0.1; pointer-events: none; z-index: 0; }
-.bg-glow-1 { width: 500px; height: 500px; top: -200px; left: -100px; background: #6c5ce7; animation: floatGlow 10s ease-in-out infinite; }
-.bg-glow-2 { width: 400px; height: 400px; bottom: -100px; right: -100px; background: #00cec9; animation: floatGlow 12s ease-in-out infinite reverse; }
-.bg-glow-3 { width: 300px; height: 300px; top: 50%; left: 50%; background: #fd79a8; animation: floatGlow 8s ease-in-out infinite 2s; }
-@keyframes floatGlow { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,-40px) scale(1.1); } }
-
-/* Navbar */
-.navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 16px 40px; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
-.nav-logo { font-size: 22px; font-weight: 900; background: linear-gradient(135deg, #6c5ce7, #00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
-.nav-logo i { margin-right: 8px; -webkit-text-fill-color: #6c5ce7; }
-.nav-links { display: flex; gap: 20px; align-items: center; }
-.nav-links a { color: #888; text-decoration: none; font-size: 14px; font-weight: 500; transition: 0.3s; }
-.nav-links a:hover { color: #fff; }
-.nav-links a i { margin-right: 6px; }
-
-/* Hero */
-.hero { position: relative; z-index: 1; padding: 140px 40px 60px; text-align: center; }
-.hero h1 { font-size: clamp(32px,5vw,64px); font-weight: 900; line-height: 1.1; margin-bottom: 16px; }
-.hero h1 span { background: linear-gradient(135deg, #6c5ce7, #00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.hero p { color: #888; font-size: 18px; max-width: 600px; margin: 0 auto 30px; line-height: 1.6; }
-
-/* Search */
-.search-box { max-width: 560px; margin: 0 auto; position: relative; }
-.search-box input { width: 100%; padding: 16px 20px 16px 52px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 16px; outline: none; transition: 0.4s; font-family: inherit; }
-.search-box input:focus { border-color: #6c5ce7; background: rgba(108,92,231,0.08); box-shadow: 0 0 30px rgba(108,92,231,0.15); }
-.search-box input::placeholder { color: #555; }
-.search-box i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: #555; font-size: 18px; }
-.search-box .clear-btn { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #555; cursor: pointer; font-size: 16px; display: none; }
-.search-box .clear-btn.show { display: block; }
-
-/* Categories */
-.categories { position: relative; z-index: 1; padding: 20px 40px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-.cat-btn { padding: 10px 22px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #888; cursor: pointer; font-size: 13px; font-weight: 500; transition: 0.3s; font-family: inherit; }
-.cat-btn:hover { border-color: rgba(108,92,231,0.3); color: #fff; background: rgba(108,92,231,0.1); }
-.cat-btn.active { background: #6c5ce7; color: #fff; border-color: #6c5ce7; }
-.cat-btn i { margin-right: 6px; }
-
-/* Grid */
-.app-grid { position: relative; z-index: 1; padding: 30px 40px 80px; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 20px; max-width: 1280px; margin: 0 auto; }
-.app-card { background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 24px; cursor: pointer; transition: all 0.5s cubic-bezier(0.23,1,0.32,1); position: relative; overflow: hidden; animation: spaceInDown 0.6s cubic-bezier(0.23,1,0.32,1) both; }
-.app-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg,transparent,rgba(255,255,255,0.03),transparent); transition: 0.6s; }
-.app-card:hover::before { left: 100%; }
-.app-card:hover { transform: translateY(-8px); border-color: rgba(108,92,231,0.3); box-shadow: 0 15px 50px rgba(0,0,0,0.4); }
-.app-card .card-top { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
-.app-card .card-icon { width: 52px; height: 52px; border-radius: 14px; object-fit: cover; flex-shrink: 0; }
-.app-card .card-title { font-size: 16px; font-weight: 700; }
-.app-card .card-category { font-size: 11px; color: #6c5ce7; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
-.app-card .card-desc { color: #777; font-size: 13px; line-height: 1.5; margin-bottom: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.app-card .card-footer { display: flex; justify-content: space-between; align-items: center; }
-.app-card .card-btn { padding: 8px 18px; border-radius: 10px; border: none; background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; font-family: inherit; }
-.app-card .card-btn:hover { transform: scale(1.05); box-shadow: 0 5px 20px rgba(108,92,231,0.3); }
-.app-card .card-screenshots { display: flex; gap: 6px; margin-top: 12px; }
-.app-card .card-screenshots img { width: 60px; height: 80px; border-radius: 8px; object-fit: cover; opacity: 0.7; transition: 0.3s; }
-.app-card .card-screenshots img:hover { opacity: 1; transform: scale(1.05); }
-
-/* Modal */
-.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s ease; }
-.modal-overlay.show { display: flex; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.modal { background: linear-gradient(145deg,rgba(20,20,20,0.95),rgba(10,10,10,0.98)); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 36px; position: relative; animation: spaceInDown 0.5s cubic-bezier(0.23,1,0.32,1); }
-.modal-close { position: absolute; top: 16px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(255,255,255,0.05); color: #888; cursor: pointer; font-size: 16px; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
-.modal-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
-.modal-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
-.modal-header img { width: 64px; height: 64px; border-radius: 16px; }
-.modal-header h2 { font-size: 22px; }
-.modal-header .cat-badge { font-size: 11px; color: #6c5ce7; text-transform: uppercase; letter-spacing: 1px; }
-.modal-desc { color: #999; font-size: 14px; line-height: 1.7; margin-bottom: 20px; }
-.modal-screenshots { display: grid; grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); gap: 10px; margin-bottom: 24px; }
-.modal-screenshots img { width: 100%; height: 100px; object-fit: cover; border-radius: 10px; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.05); }
-.modal-screenshots img:hover { transform: scale(1.03); border-color: #6c5ce7; }
-.modal-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; font-family: inherit; }
-.modal-btn:hover { transform: scale(1.02); box-shadow: 0 8px 30px rgba(108,92,231,0.3); }
-.modal-btn i { margin-right: 8px; }
-
-/* Ad Wait Modal */
-.ad-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(20px); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
-.ad-modal.show { display: flex; }
-.ad-modal-content { text-align: center; max-width: 400px; }
-.ad-modal-content .ad-icon { font-size: 64px; color: #6c5ce7; margin-bottom: 20px; animation: pulse 1.5s ease-in-out infinite; }
-@keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }
-.ad-modal-content h3 { font-size: 22px; margin-bottom: 8px; }
-.ad-modal-content p { color: #888; font-size: 14px; margin-bottom: 20px; }
-.ad-modal-content .ad-timer { font-size: 48px; font-weight: 900; background: linear-gradient(135deg,#6c5ce7,#00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; }
-.ad-modal-content .ad-progress { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; margin-bottom: 20px; }
-.ad-modal-content .ad-progress-bar { height: 100%; background: linear-gradient(90deg,#6c5ce7,#00cec9); border-radius: 2px; width: 0%; transition: width 0.1s linear; }
-.ad-modal-content .ad-continue { display: none; padding: 14px 40px; border-radius: 12px; border: none; background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.3s; font-family: inherit; margin: 0 auto; }
-.ad-modal-content .ad-continue.show { display: inline-block; }
-.ad-modal-content .ad-continue:hover { transform: scale(1.05); }
-
-/* Loading */
-.loading { position: relative; z-index: 1; text-align: center; padding: 60px; display: none; }
-.loading.show { display: block; }
-.loading .spinner { width: 48px; height: 48px; border: 3px solid rgba(108,92,231,0.1); border-top-color: #6c5ce7; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading p { color: #666; font-size: 14px; }
-.empty-state { position: relative; z-index: 1; text-align: center; padding: 80px 20px; display: none; }
-.empty-state.show { display: block; }
-.empty-state i { font-size: 64px; color: #333; margin-bottom: 16px; }
-.empty-state h3 { color: #666; font-size: 18px; }
-
-/* Footer */
-.footer { position: relative; z-index: 1; text-align: center; padding: 30px 40px; border-top: 1px solid rgba(255,255,255,0.05); color: #444; font-size: 13px; }
-.footer a { color: #6c5ce7; text-decoration: none; }
-
-/* Responsive */
-@media(max-width:768px) {
-    .navbar { padding: 14px 20px; }
-    .hero { padding: 120px 20px 40px; }
-    .app-grid { padding: 20px; gap: 14px; grid-template-columns: 1fr; }
-    .categories { padding: 12px 20px; }
-    .modal { padding: 24px; }
-}
-
-/* Swap animation helper */
-@keyframes swap { 0% { opacity: 0; transform: scale(0.8) rotateZ(-3deg); } 100% { opacity: 1; transform: scale(1) rotateZ(0); } }
-.app-card { animation-name: spaceInDown; }
-@keyframes spaceInDown { 0% { opacity: 0; transform: scale(0.2) translateY(-200px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#08090c;--flap:#14161d;--flap2:#0e1015;--steel:#232833;--line:#262c38;--paper:#eef0ff;--mut:#a9afc2;--dim:#828aa0;--pur:#6c5ce7;--pur2:#8b7cff;--tea:#00cec9;--red:#ff5d5d}
+html{scrollbar-color:var(--pur) #0a0b0e}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--ink);color:var(--paper);overflow-x:hidden;-webkit-user-select:none;user-select:none;caret-color:var(--tea)}
+::selection{background:var(--pur);color:#fff}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:#0a0b0e}::-webkit-scrollbar-thumb{background:var(--steel);border-radius:4px}::-webkit-scrollbar-thumb:hover{background:var(--pur)}
+img{-webkit-user-drag:none;user-drag:none}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--tea);outline-offset:2px}
+.navbar{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 26px;background:rgba(10,11,15,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:.14em;color:var(--paper);text-decoration:none}
+.nav-logo i{color:var(--pur2);margin-right:8px}
+.nav-right{display:flex;align-items:center;gap:12px;font-family:'JetBrains Mono',monospace;font-size:12px}
+.nav-right a{color:var(--mut);text-decoration:none;letter-spacing:.08em}
+.nav-right a:hover{color:#fff}
+#navCount{border:1px solid var(--line);border-radius:9px;padding:8px 14px;background:#0d0f14;font-variant-numeric:tabular-nums}
+#navCount span{color:var(--pur2);font-weight:700}
+#navCount i{margin-right:6px;color:var(--pur2)}
+.hall{max-width:1280px;margin:0 auto;padding:118px 26px 30px}
+.dep-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.dep-head h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(40px,6vw,72px);font-weight:700;letter-spacing:.06em;line-height:.95}
+.dep-head h1 em{font-style:normal;color:var(--pur2)}
+.dep-sub{color:var(--mut);font-size:15px;margin-top:10px;max-width:68ch;line-height:1.6}
+.dep-meta{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--dim);text-align:right;line-height:2}
+.dep-meta b{color:var(--tea)}
+.searchboard{background:linear-gradient(180deg,#171b23,#0c0e12);border:1px solid var(--line);border-radius:16px;padding:18px;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+.search-box{position:relative}
+.search-box input{width:100%;padding:16px 46px 16px 50px;border-radius:12px;border:1px solid var(--line);background:#0b0d12;color:var(--paper);font-size:15px;outline:none;transition:.25s;font-family:'JetBrains Mono',monospace;letter-spacing:.02em;font-variant-numeric:tabular-nums;caret-color:var(--tea)}
+.search-box input:focus{border-color:var(--pur);box-shadow:0 0 0 3px rgba(108,92,231,.22)}
+.search-box input::placeholder{color:var(--dim)}
+.search-box>i{position:absolute;left:17px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:16px}
+.clear-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--dim);cursor:pointer;font-size:15px;display:none;background:none;border:none}
+.clear-btn.show{display:block}.clear-btn:hover{color:#fff}
+.live{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--dim);text-align:right;line-height:2}
+.live b{color:var(--pur2);font-size:20px;letter-spacing:0}
+.categories{display:flex;gap:9px;flex-wrap:wrap;margin:16px 0 4px}
+.cat-btn{padding:10px 18px;border-radius:10px;border:1px solid var(--line);background:#0d0f14;color:var(--mut);cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.06em;transition:.22s;font-family:'JetBrains Mono',monospace}
+.cat-btn i{margin-right:7px;color:var(--dim)}
+.cat-btn:hover{border-color:rgba(108,92,231,.5);color:#fff}
+.cat-btn.active{background:var(--pur);border-color:var(--pur);color:#fff}
+.cat-btn.active i{color:#fff}
+.app-grid{padding:18px 0 60px;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.app-card{background:linear-gradient(180deg,var(--flap),var(--flap2));border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .25s,transform .25s;animation:flap .5s cubic-bezier(.2,.9,.25,1) both;box-shadow:0 14px 34px rgba(0,0,0,.4)}
+.app-card::after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.65);box-shadow:0 1px 0 rgba(255,255,255,.05);pointer-events:none}
+.app-card:hover{transform:translateY(-4px);border-color:rgba(108,92,231,.55)}
+@keyframes flap{0%{opacity:0;transform:perspective(800px) rotateX(-28deg) translateY(-8px)}100%{opacity:1;transform:none}}
+.card-top{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.card-icon{width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;border:1px solid var(--line);background:#0b0d12}
+.card-code{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.16em}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:23px;font-weight:600;letter-spacing:.04em;line-height:1}
+.card-category{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--pur2);letter-spacing:.2em;margin-top:4px}
+.card-desc{color:var(--mut);font-size:13.5px;line-height:1.6;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:65ch}
+.card-shots{display:flex;gap:7px;margin-bottom:13px}
+.card-shots img{width:62px;height:78px;border-radius:8px;object-fit:cover;opacity:.85;border:1px solid var(--line)}
+.card-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--line);padding-top:13px}
+.card-time{font-family:'JetBrains Mono',monospace;color:var(--dim);font-size:11px;font-variant-numeric:tabular-nums}
+.card-btn{padding:9px 20px;border-radius:9px;border:none;background:var(--pur);color:#fff;font-size:12px;font-weight:700;letter-spacing:.08em;cursor:pointer;transition:.22s;font-family:'JetBrains Mono',monospace}
+.card-btn:hover{background:var(--pur2);box-shadow:0 6px 16px rgba(0,0,0,.5)}
+.status-pill{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;padding:4px 10px;border-radius:20px;border:1px solid rgba(0,206,201,.4);color:var(--tea);background:rgba(0,206,201,.08)}
+.modal-overlay{position:fixed;inset:0;background:rgba(4,5,8,.82);backdrop-filter:blur(10px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:linear-gradient(180deg,#161a22,#0c0e12);border:1px solid var(--line);border-radius:20px;max-width:620px;width:100%;max-height:90vh;overflow-y:auto;padding:0;position:relative}
+.modal-slip{padding:30px 30px 28px}
+.modal-route{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--dim);margin-bottom:16px}
+.modal-route b{color:var(--pur2)}
+.modal-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.modal-header img{width:64px;height:64px;border-radius:15px;border:1px solid var(--line)}
+.modal-header h2{font-family:'Barlow Condensed',sans-serif;font-size:32px;letter-spacing:.03em;line-height:1}
+.cat-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--pur2);letter-spacing:.2em}
+.modal-desc{color:var(--mut);font-size:14.5px;line-height:1.7;margin-bottom:18px;max-width:68ch}
+.modal-screenshots{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:22px}
+.modal-screenshots img{width:100%;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer}
+.modal-btn{width:100%;padding:16px;border-radius:13px;border:none;background:var(--pur);color:#fff;font-size:15px;font-weight:700;letter-spacing:.06em;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.modal-btn:hover{background:var(--pur2)}
+.modal-close{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:#0b0d12;color:var(--mut);cursor:pointer;font-size:15px}
+.modal-close:hover{color:#fff;border-color:var(--pur)}
+.perf{border-top:2px dashed var(--line);padding:14px 30px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--dim);display:flex;justify-content:space-between}
+.ad-modal{position:fixed;inset:0;background:rgba(4,5,8,.94);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.ad-modal.show{display:flex}
+.ad-modal-content{text-align:center;max-width:420px;background:linear-gradient(180deg,#161a22,#0c0e12);border:1px solid var(--line);border-radius:20px;padding:38px 34px}
+.ad-icon{font-size:52px;color:var(--pur2);margin-bottom:16px}
+.ad-modal-content h3{font-family:'Barlow Condensed',sans-serif;font-size:30px;letter-spacing:.05em;margin-bottom:6px}
+.ad-modal-content p{color:var(--mut);font-size:13.5px;margin-bottom:18px}
+.ad-timer{font-family:'JetBrains Mono',monospace;font-size:56px;font-weight:700;color:var(--paper);font-variant-numeric:tabular-nums;margin-bottom:12px}
+.ad-progress{width:100%;height:6px;background:#0b0d12;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:20px}
+.ad-progress-bar{height:100%;background:linear-gradient(90deg,var(--pur),var(--tea));width:0%}
+.ad-continue{display:none;padding:14px 38px;border-radius:11px;border:none;background:var(--pur);color:#fff;font-size:14px;font-weight:700;letter-spacing:.06em;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.ad-continue.show{display:inline-block}
+.loading{text-align:center;padding:60px;display:none}
+.loading.show{display:block}
+.spinner{width:46px;height:46px;border:3px solid #1c2130;border-top-color:var(--pur);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading p{color:var(--dim);font-size:13px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em}
+.empty-state{text-align:center;padding:70px 20px;display:none;border:1px dashed var(--line);border-radius:16px;margin-bottom:50px}
+.empty-state.show{display:block}
+.empty-state i{font-size:52px;color:var(--steel);margin-bottom:14px}
+.empty-state h3{font-family:'Barlow Condensed',sans-serif;font-size:26px;letter-spacing:.06em;color:var(--mut)}
+.empty-state p{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--red);margin-top:8px}
+.footer{text-align:center;padding:28px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+.footer a{color:var(--pur2);text-decoration:none}
+@media(max-width:768px){.hall{padding:108px 16px 20px}.navbar{padding:12px 16px}.searchboard{grid-template-columns:1fr}.live{text-align:left}.app-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.app-card{animation:none}.spinner{animation-duration:1.6s}}
 </style>
 </head>
 <body>
-<div class="bg-glow bg-glow-1"></div>
-<div class="bg-glow bg-glow-2"></div>
-<div class="bg-glow bg-glow-3"></div>
-
-<!-- Navbar -->
+<!-- THESIS: departures board as store. OWN-WORLD: ink hall, flap rows with split line, Barlow Condensed destinations, mono timetable data, purple boarding / teal on-time. STORY: search destination, pick platform, open slip, board via lounge. FIRST VIEWPORT: DEPARTURES header, destination search board, platform filters, flap rows. FORM: split-flap concourse, seed 6b638c72. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
 <nav class="navbar">
-    <a href="../" class="nav-logo"><i class="fas fa-cube"></i> CALLANIX</a>
-    <div class="nav-links">
-        <a href="#" id="navCount"><i class="fas fa-layer-group"></i> <span>0</span> Apps</a>
-    </div>
+<a href="../" class="nav-logo"><i class="fas fa-cube"></i>CALLANIX</a>
+<div class="nav-right">
+<a href="../"><i class="fas fa-arrow-left"></i> HALL</a>
+<a href="#" id="navCount"><i class="fas fa-layer-group"></i><span>0</span>&nbsp;FLAPS</a>
+</div>
 </nav>
-
-<!-- Hero -->
-<section class="hero">
-    <h1>Discover <span>Amazing Apps</span></h1>
-    <p>Curated collection of the best apps, games, and tools. Find your next download.</p>
-    <div class="search-box">
-        <i class="fas fa-search"></i>
-        <input type="text" id="searchInput" placeholder="Search apps..." autocomplete="off">
-        <span class="clear-btn" id="clearBtn"><i class="fas fa-times"></i></span>
-    </div>
-</section>
-
-<!-- Categories -->
-<div class="categories" id="categories">
-    <button class="cat-btn active" data-cat="all"><i class="fas fa-th-large"></i> All</button>
+<div class="hall">
+<div class="dep-head">
+<div>
+<h1>APP <em>DEPARTURES</em></h1>
+<p class="dep-sub">Curated apps, games and tools boarding now. Search a destination, choose a platform, open the slip.</p>
 </div>
-
-<!-- Loading -->
-<div class="loading show" id="loading">
-    <div class="spinner"></div>
-    <p>Loading apps...</p>
+<div class="dep-meta">CALLANIX HALL 01 · CONCOURSE U<br><b id="liveCount">0 ON BOARD</b></div>
 </div>
-
-<!-- Empty -->
-<div class="empty-state" id="emptyState">
-    <i class="fas fa-box-open"></i>
-    <h3>No apps found</h3>
+<div class="searchboard">
+<div class="search-box">
+<i class="fas fa-search"></i>
+<input type="text" id="searchInput" placeholder="TYPE DESTINATION — e.g. photo editor…" autocomplete="off" aria-label="Search apps">
+<button class="clear-btn" id="clearBtn" aria-label="Clear search"><i class="fas fa-times"></i></button>
 </div>
-
-<!-- App Grid -->
+<div class="live"><b id="clock">--:--</b><br>BOARD REFRESH · LIVE</div>
+</div>
+<div class="categories" id="categories" role="tablist" aria-label="Platforms">
+<button class="cat-btn active" data-cat="all"><i class="fas fa-th-large"></i>ALL PLT</button>
+</div>
+<div class="loading show" id="loading" role="status"><div class="spinner"></div><p>FLAPS TURNING…</p></div>
+<div class="empty-state" id="emptyState"><i class="fas fa-box-open"></i><h3>No departures found</h3><p>CANCELLED — TRY ANOTHER DESTINATION</p></div>
 <div class="app-grid" id="appGrid"></div>
-
-<!-- App Detail Modal -->
-<div class="modal-overlay" id="modalOverlay">
-    <div class="modal">
-        <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
-        <div class="modal-header">
-            <img id="modalIcon" src="" alt="">
-            <div>
-                <h2 id="modalTitle"></h2>
-                <span class="cat-badge" id="modalCategory"></span>
-            </div>
-        </div>
-        <p class="modal-desc" id="modalDesc"></p>
-        <div class="modal-screenshots" id="modalScreenshots"></div>
-        <button class="modal-btn" id="modalBtn"><i class="fas fa-download"></i> Visit App</button>
-    </div>
 </div>
-
-<!-- Ad Gateway Modal -->
-<div class="ad-modal" id="adModal">
-    <div class="ad-modal-content">
-        <div class="ad-icon"><i class="fas fa-shield-halved"></i></div>
-        <h3>Verifying Access</h3>
-        <p>Please wait while we prepare your download link...</p>
-        <div class="ad-timer" id="adTimer">5</div>
-        <div class="ad-progress"><div class="ad-progress-bar" id="adProgress"></div></div>
-        <button class="ad-continue" id="adContinue"><i class="fas fa-rocket"></i> Continue to App</button>
-    </div>
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true">
+<div class="modal">
+<div class="modal-slip">
+<div class="modal-route"><span>CONCOURSE U · INSPECTION SLIP</span><b id="modalCategory">OTHER</b></div>
+<button class="modal-close" id="modalClose" aria-label="Close"><i class="fas fa-times"></i></button>
+<div class="modal-header">
+<img id="modalIcon" src="" alt="App icon">
+<div><h2 id="modalTitle">Untitled</h2><span class="cat-badge" id="modalCategory2" style="display:none"></span></div>
 </div>
-
-<!-- Footer -->
-<div class="footer">&copy; 2026 Callanix Store. All rights reserved. | Built with <i class="fas fa-heart" style="color:#6c5ce7;"></i></div>
-
+<p class="modal-desc" id="modalDesc"></p>
+<div class="modal-screenshots" id="modalScreenshots"></div>
+<button class="modal-btn" id="modalBtn"><i class="fas fa-download"></i>&nbsp;BOARD — VISIT APP</button>
+</div>
+<div class="perf"><span>VERIFY → BOARD</span><span>SLIP U·<span id="slipNo">000</span></span></div>
+</div>
+</div>
+<div class="ad-modal" id="adModal" role="dialog" aria-modal="true">
+<div class="ad-modal-content">
+<div class="ad-icon"><i class="fas fa-shield-halved"></i></div>
+<h3>HOLDING LOUNGE</h3>
+<p>Preparing your departure link. Remain seated.</p>
+<div class="ad-timer" id="adTimer">5</div>
+<div class="ad-progress"><div class="ad-progress-bar" id="adProgress"></div></div>
+<button class="ad-continue" id="adContinue"><i class="fas fa-rocket"></i>&nbsp;CONTINUE TO APP</button>
+</div>
+</div>
+<div class="footer">© 2026 CALLANIX STORE · CONCOURSE U · BUILT FOR LOW-END · <a href="../">HALL 01</a></div>
 <script>
-// Anti-devtools
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
-    if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','C','J'].includes(e.key)) || (e.ctrlKey && ['u','s'].includes(e.key))) e.preventDefault();
+if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','C','J'].includes(e.key)) || (e.ctrlKey && ['u','s'].includes(e.key))) e.preventDefault();
 });
-// Devtools detection
 (function(){const d=new Image();Object.defineProperty(d,'id',{get:function(){document.body.innerHTML='<div style="text-align:center;padding:100px 20px;color:#fff;"><h1>Access Denied</h1><p>Developer tools detected.</p></div>';}});console.log('%c',d);})();
-
-// State
 let apps = [];
 let currentApp = null;
 let filteredApps = [];
-
-// DOM refs
 const grid = document.getElementById('appGrid');
 const loading = document.getElementById('loading');
 const emptyState = document.getElementById('emptyState');
@@ -243,195 +195,110 @@ const modalScreenshots = document.getElementById('modalScreenshots');
 const modalBtn = document.getElementById('modalBtn');
 const modalClose = document.getElementById('modalClose');
 const navCount = document.getElementById('navCount').querySelector('span');
+const liveCount = document.getElementById('liveCount');
 const adModal = document.getElementById('adModal');
 const adTimer = document.getElementById('adTimer');
 const adProgress = document.getElementById('adProgress');
 const adContinue = document.getElementById('adContinue');
-
-// ============================================================
-// CONFIG: Set your GitHub raw data URL
-// Change YOUR_USERNAME and YOUR_REPO below to match your GitHub
-// ============================================================
 const DATA_URLS = [
-    'https://github.com/vaguevault76-ctrl/callanix-apps-store/blob/cd1eeed24c7acebed42b96dccfc3743424ee561d/data/links.json',
-    '../data/links.json'
+'https://github.com/vaguevault76-ctrl/callanix-apps-store/blob/cd1eeed24c7acebed42b96dccfc3743424ee561d/data/links.json',
+'../data/links.json'
 ];
-
-// Fetch apps
+function tick(){var d=new Date(),p=function(n){return String(n).padStart(2,'0')};var el=document.getElementById('clock');if(el)el.textContent=p(d.getHours())+':'+p(d.getMinutes());}
+tick();setInterval(tick,15000);
 async function fetchApps() {
-    loading.classList.add('show');
-    grid.innerHTML = '';
-    emptyState.classList.remove('show');
-    apps = [];
-    for (const url of DATA_URLS) {
-        try {
-            const res = await fetch(url + '?t=' + Date.now());
-            if (!res.ok) continue;
-            const text = await res.text();
-            const data = JSON.parse(text);
-            if (Array.isArray(data) && data.length) { apps = data; break; }
-        } catch(e) { /* try next URL */ }
-    }
-    loading.classList.remove('show');
-    renderCategories();
-    renderApps();
+loading.classList.add('show');grid.innerHTML = '';emptyState.classList.remove('show');apps = [];
+for (const url of DATA_URLS) {
+try {
+const res = await fetch(url + '?t=' + Date.now());
+if (!res.ok) continue;
+const text = await res.text();
+const data = JSON.parse(text);
+if (Array.isArray(data) && data.length) { apps = data; break; }
+} catch(e) {}
 }
-
-// Render categories
+loading.classList.remove('show');renderCategories();applyFilters('all','');
+}
 function renderCategories() {
-    const cats = new Set();
-    apps.forEach(a => { if(a.category) cats.add(a.category); });
-    const catMap = { 'all':'All','games':'Games','tools':'Tools','entertainment':'Entertainment','education':'Education','other':'Other' };
-    const icons = { 'games':'fa-gamepad','tools':'fa-wrench','entertainment':'fa-film','education':'fa-graduation-cap','other':'fa-star' };
-    categories.innerHTML = '<button class="cat-btn active" data-cat="all"><i class="fas fa-th-large"></i> All</button>';
-    cats.forEach(c => {
-        const btn = document.createElement('button');
-        btn.className = 'cat-btn';
-        btn.dataset.cat = c;
-        btn.innerHTML = `<i class="fas ${icons[c]||'fa-star'}"></i> ${catMap[c]||c}`;
-        btn.addEventListener('click', () => filterByCategory(c));
-        categories.appendChild(btn);
-    });
-    // Re-bind "All" button
-    categories.querySelector('[data-cat="all"]').addEventListener('click', () => filterByCategory('all'));
+const cats = new Set();apps.forEach(a => { if(a.category) cats.add(a.category); });
+const catMap = { 'all':'ALL PLT','games':'GAMES','tools':'TOOLS','entertainment':'FILM','education':'STUDY','other':'OTHER' };
+const icons = { 'games':'fa-gamepad','tools':'fa-wrench','entertainment':'fa-film','education':'fa-graduation-cap','other':'fa-star' };
+categories.innerHTML = '<button class="cat-btn active" data-cat="all"><i class="fas fa-th-large"></i> ALL PLT</button>';
+cats.forEach(c => {
+const btn = document.createElement('button');btn.className = 'cat-btn';btn.dataset.cat = c;
+btn.innerHTML = '<i class="fas '+(icons[c]||'fa-star')+'"></i> '+((catMap[c]||c).toUpperCase());
+btn.addEventListener('click', () => filterByCategory(c));categories.appendChild(btn);
+});
+categories.querySelector('[data-cat="all"]').addEventListener('click', () => filterByCategory('all'));
 }
-
-// Filter by category
 function filterByCategory(cat) {
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    const btn = categories.querySelector(`[data-cat="${cat}"]`);
-    if (btn) btn.classList.add('active');
-    applyFilters(cat, searchInput.value);
+document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+const btn = categories.querySelector('[data-cat="'+cat+'"]');if (btn) btn.classList.add('active');
+applyFilters(cat, searchInput.value);
 }
-
-// Search
 searchInput.addEventListener('input', () => {
-    const active = document.querySelector('.cat-btn.active');
-    applyFilters(active ? active.dataset.cat : 'all', searchInput.value);
-    clearBtn.classList.toggle('show', searchInput.value.length > 0);
+const active = document.querySelector('.cat-btn.active');
+applyFilters(active ? active.dataset.cat : 'all', searchInput.value);
+clearBtn.classList.toggle('show', searchInput.value.length > 0);
 });
-clearBtn.addEventListener('click', () => { searchInput.value = ''; clearBtn.classList.remove('show'); applyFilters('all', ''); });
-
-// Apply filters
+clearBtn.addEventListener('click', () => { searchInput.value = '';clearBtn.classList.remove('show');const a=document.querySelector('.cat-btn.active');applyFilters(a?a.dataset.cat:'all','');searchInput.focus(); });
 function applyFilters(cat, query) {
-    filteredApps = apps.filter(a => {
-        if (cat !== 'all' && a.category !== cat) return false;
-        if (query) {
-            const q = query.toLowerCase();
-            return a.title.toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q);
-        }
-        return true;
-    });
-    renderGrid();
-}
-
-// Render grid
-function renderGrid() {
-    grid.innerHTML = '';
-    if (filteredApps.length === 0) {
-        emptyState.classList.add('show');
-        return;
-    }
-    emptyState.classList.remove('show');
-    navCount.textContent = filteredApps.length;
-    filteredApps.forEach((app, i) => {
-        const card = document.createElement('div');
-        card.className = 'app-card';
-        card.style.animationDelay = (i * 0.05) + 's';
-        card.innerHTML = `
-            <div class="card-top">
-                <img class="card-icon" src="${app.iconUrl||'https://via.placeholder.com/52/6c5ce7/ffffff?text=A'}" alt="" loading="lazy" onerror="this.src='https://via.placeholder.com/52/6c5ce7/ffffff?text=?'">
-                <div>
-                    <div class="card-title">${app.title||'Untitled'}</div>
-                    <div class="card-category">${app.category||'other'}</div>
-                </div>
-            </div>
-            <div class="card-desc">${app.description||'No description available.'}</div>
-            ${app.screenshots && app.screenshots.length ? `<div class="card-screenshots">${app.screenshots.slice(0,3).map(s => `<img src="${s}" alt="" loading="lazy" onerror="this.style.display='none'">`).join('')}</div>` : ''}
-            <div class="card-footer">
-                <span style="color:#555;font-size:12px;"><i class="far fa-clock"></i> ${app.createdAt ? new Date(app.createdAt).toLocaleDateString() : ''}</span>
-                <button class="card-btn" data-id="${app.id}"><i class="fas fa-eye"></i> View</button>
-            </div>
-        `;
-        card.querySelector('.card-btn').addEventListener('click', (e) => {
-            e.stopPropagation();
-            openModal(app);
-        });
-        card.addEventListener('click', () => openModal(app));
-        grid.appendChild(card);
-    });
-}
-
-// Open modal
-function openModal(app) {
-    currentApp = app;
-    modalIcon.src = app.iconUrl || 'https://via.placeholder.com/64/6c5ce7/ffffff?text=A';
-    modalIcon.onerror = function(){ this.src='https://via.placeholder.com/64/6c5ce7/ffffff?text=?'; };
-    modalTitle.textContent = app.title || 'Untitled';
-    modalCategory.textContent = (app.category||'other').toUpperCase();
-    modalDesc.textContent = app.description || 'No description available.';
-    modalScreenshots.innerHTML = '';
-    if (app.screenshots && app.screenshots.length) {
-        app.screenshots.forEach(s => {
-            const img = document.createElement('img');
-            img.src = s;
-            img.loading = 'lazy';
-            img.onerror = function(){ this.style.display='none'; };
-            modalScreenshots.appendChild(img);
-        });
-    } else {
-        modalScreenshots.innerHTML = '<p style="color:#555;font-size:13px;">No screenshots available.</p>';
-    }
-    modalOverlay.classList.add('show');
-    document.body.style.overflow = 'hidden';
-}
-
-// Close modal
-modalClose.addEventListener('click', () => { modalOverlay.classList.remove('show'); document.body.style.overflow = ''; });
-modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) { modalOverlay.classList.remove('show'); document.body.style.overflow = ''; } });
-
-// Visit app (with Ad Gateway)
-modalBtn.addEventListener('click', () => {
-    modalOverlay.classList.remove('show');
-    document.body.style.overflow = '';
-    if (!currentApp) return;
-    if (currentApp.adUrl) {
-        showAdGateway(currentApp);
-    } else {
-        window.open(currentApp.url, '_blank');
-    }
+filteredApps = apps.filter(a => {
+if (cat !== 'all' && a.category !== cat) return false;
+if (query) { const q = query.toLowerCase();return a.title.toLowerCase().includes(q) || (a.description||'').toLowerCase().includes(q); }
+return true;
 });
-
-// Ad Gateway
-function showAdGateway(app) {
-    adModal.classList.add('show');
-    let count = 5;
-    adTimer.textContent = count;
-    adProgress.style.width = '0%';
-    adContinue.classList.remove('show');
-    const interval = setInterval(() => {
-        count--;
-        adTimer.textContent = count;
-        adProgress.style.width = ((5 - count) / 5 * 100) + '%';
-        if (count <= 0) {
-            clearInterval(interval);
-            adTimer.textContent = '0';
-            adProgress.style.width = '100%';
-            adContinue.classList.add('show');
-        }
-    }, 1000);
-    // Open ad URL in background
-    const adWindow = window.open(app.adUrl, '_blank');
-    adContinue.onclick = () => {
-        adModal.classList.remove('show');
-        if (app.url) window.open(app.url, '_blank');
-    };
+renderGrid();
 }
-
-// Keyboard shortcut disable helper
+function renderGrid() {
+grid.innerHTML = '';
+if (filteredApps.length === 0) { emptyState.classList.add('show');navCount.textContent='0';if(liveCount)liveCount.textContent='0 ON BOARD';return; }
+emptyState.classList.remove('show');navCount.textContent = filteredApps.length;if(liveCount)liveCount.textContent = filteredApps.length+' ON BOARD';
+filteredApps.forEach((app, i) => {
+const card = document.createElement('div');card.className = 'app-card';card.style.animationDelay = (Math.min(i,12) * 0.05) + 's';
+const shots = (app.screenshots && app.screenshots.length) ? '<div class="card-shots">'+app.screenshots.slice(0,3).map(s => '<img src="'+s+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">').join('')+'</div>' : '';
+card.innerHTML =
+'<div class="card-top"><img class="card-icon" src="'+(app.iconUrl||'https://via.placeholder.com/52/6c5ce7/ffffff?text=A')+'" alt="" loading="lazy" onerror="this.src=\'https://via.placeholder.com/52/6c5ce7/ffffff?text=?\'">'+
+'<div><div class="card-code">FLAP ' + String(i+1).padStart(2,'0') + ' · U·HALL</div><div class="card-title">'+(app.title||'Untitled').toUpperCase()+'</div><div class="card-category">'+(app.category||'other').toUpperCase()+'</div></div></div>'+
+'<div class="card-desc">'+(app.description||'No description available.')+'</div>'+shots+
+'<div class="card-footer"><span class="card-time">'+(app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'NO DATE')+' · <span class="status-pill">ON TIME</span></span><button class="card-btn" data-id="'+app.id+'">OPEN</button></div>';
+card.querySelector('.card-btn').addEventListener('click', (e) => { e.stopPropagation();openModal(app); });
+card.addEventListener('click', () => openModal(app));grid.appendChild(card);
+});
+}
+function openModal(app) {
+currentApp = app;
+modalIcon.src = app.iconUrl || 'https://via.placeholder.com/64/6c5ce7/ffffff?text=A';
+modalIcon.onerror = function(){ this.src='https://via.placeholder.com/64/6c5ce7/ffffff?text=?'; };
+modalTitle.textContent = (app.title || 'Untitled').toUpperCase();
+modalCategory.textContent = (app.category||'other').toUpperCase();
+modalDesc.textContent = app.description || 'No description available.';
+document.getElementById('slipNo').textContent = String((app.id||'0')).slice(-3).toUpperCase() || '000';
+modalScreenshots.innerHTML = '';
+if (app.screenshots && app.screenshots.length) {
+app.screenshots.forEach(s => { const img = document.createElement('img');img.src = s;img.loading = 'lazy';img.onerror = function(){ this.style.display='none'; };modalScreenshots.appendChild(img); });
+} else { modalScreenshots.innerHTML = '<p style="color:var(--dim);font-size:13px;">No screenshots on this slip.</p>'; }
+modalOverlay.classList.add('show');document.body.style.overflow = 'hidden';
+}
+modalClose.addEventListener('click', () => { modalOverlay.classList.remove('show');document.body.style.overflow = ''; });
+modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) { modalOverlay.classList.remove('show');document.body.style.overflow = ''; } });
+document.addEventListener('keydown', e => { if(e.key==='Escape'){modalOverlay.classList.remove('show');adModal.classList.remove('show');document.body.style.overflow='';} });
+modalBtn.addEventListener('click', () => {
+modalOverlay.classList.remove('show');document.body.style.overflow = '';
+if (!currentApp) return;
+if (currentApp.adUrl) { showAdGateway(currentApp); } else { window.open(currentApp.url, '_blank'); }
+});
+function showAdGateway(app) {
+adModal.classList.add('show');
+let count = 5;adTimer.textContent = count;adProgress.style.width = '0%';adContinue.classList.remove('show');
+const interval = setInterval(() => {
+count--;adTimer.textContent = count;adProgress.style.width = ((5 - count) / 5 * 100) + '%';
+if (count <= 0) { clearInterval(interval);adTimer.textContent = '0';adProgress.style.width = '100%';adContinue.classList.add('show'); }
+}, 1000);
+window.open(app.adUrl, '_blank');
+adContinue.onclick = () => { adModal.classList.remove('show');if (app.url) window.open(app.url, '_blank'); };
+}
 ['contextmenu','selectstart','copy','cut','dragstart'].forEach(e => document.addEventListener(e, e => e.preventDefault()));
-
-// Init
 fetchApps();
 </script>
 </body>

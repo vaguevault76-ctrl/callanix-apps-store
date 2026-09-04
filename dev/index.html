@@ -1,334 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Callanix Dev Portal</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="config.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Callanix Dev Portal — Signal Box</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-body { font-family: 'Inter', sans-serif; background: #000; color: #fff; overflow-x: hidden; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0a; }
-::-webkit-scrollbar-thumb { background: #6c5ce7; border-radius: 3px; }
-body { -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
-img { -webkit-user-drag: none; user-drag: none; }
-
-/* Glow */
-.bg-glow { position: fixed; border-radius: 50%; filter: blur(150px); opacity: 0.08; pointer-events: none; z-index: 0; }
-.bg-glow-1 { width: 500px; height: 500px; top: -200px; right: -100px; background: #6c5ce7; animation: floatGlow 10s ease-in-out infinite; }
-.bg-glow-2 { width: 400px; height: 400px; bottom: -100px; left: -100px; background: #00cec9; animation: floatGlow 12s ease-in-out infinite reverse; }
-@keyframes floatGlow { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(40px,-40px) scale(1.1); } }
-
-/* ===== PASSWORD GATE ===== */
-.gate { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000; z-index: 999; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.gate.hidden { display: none; }
-.gate-box { text-align: center; max-width: 400px; width: 100%; animation: spaceInDown 0.8s cubic-bezier(0.23,1,0.32,1); }
-.gate-icon { font-size: 56px; color: #6c5ce7; margin-bottom: 16px; display: inline-block; }
-.gate-icon i { animation: pulse 2s ease-in-out infinite; }
-@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-.gate h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
-.gate p { color: #888; font-size: 14px; margin-bottom: 30px; }
-.gate-input { width: 100%; padding: 16px 20px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-size: 16px; outline: none; transition: 0.3s; font-family: inherit; text-align: center; letter-spacing: 4px; }
-.gate-input:focus { border-color: #6c5ce7; box-shadow: 0 0 30px rgba(108,92,231,0.15); }
-.gate-btn { width: 100%; margin-top: 16px; padding: 16px; border-radius: 14px; border: none; background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.3s; font-family: inherit; }
-.gate-btn:hover { transform: scale(1.02); box-shadow: 0 8px 30px rgba(108,92,231,0.3); }
-.gate-error { color: #e74c3c; font-size: 13px; margin-top: 12px; display: none; }
-.gate-error.show { display: block; }
-
-/* ===== DASHBOARD ===== */
-.dashboard { display: none; }
-.dashboard.show { display: block; }
-
-/* Nav */
-.dash-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 14px 40px; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
-.dash-logo { font-size: 20px; font-weight: 900; background: linear-gradient(135deg,#6c5ce7,#00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.dash-logo i { -webkit-text-fill-color: #6c5ce7; margin-right: 8px; }
-.dash-nav-links { display: flex; gap: 12px; align-items: center; }
-.dash-nav-links button, .dash-nav-links a { padding: 8px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #888; cursor: pointer; font-size: 13px; font-weight: 500; transition: 0.3s; font-family: inherit; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
-.dash-nav-links button:hover, .dash-nav-links a:hover { border-color: rgba(108,92,231,0.3); color: #fff; }
-.dash-nav-links .publish-btn { background: linear-gradient(135deg,#6c5ce7,#a29bfe); border-color: transparent; color: #fff; }
-.dash-nav-links .publish-btn:hover { box-shadow: 0 5px 20px rgba(108,92,231,0.3); }
-.dash-nav-links .saved-badge { font-size: 12px; color: #00cec9; padding: 4px 12px; border: 1px solid rgba(0,206,201,0.2); border-radius: 20px; }
-
-/* Main */
-.dash-main { padding: 90px 40px 40px; position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; }
-
-/* Stats */
-.stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 16px; margin-bottom: 30px; animation: spaceInDown 0.6s cubic-bezier(0.23,1,0.32,1); }
-.stat-card { background: linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px; }
-.stat-card .stat-num { font-size: 32px; font-weight: 900; background: linear-gradient(135deg,#6c5ce7,#00cec9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.stat-card .stat-label { color: #666; font-size: 13px; margin-top: 4px; }
-.stat-card .stat-icon { float: right; font-size: 32px; color: rgba(108,92,231,0.15); }
-
-/* Tabs */
-.tabs { display: flex; gap: 4px; margin-bottom: 24px; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 4px; }
-.tab { padding: 10px 24px; border-radius: 10px; border: none; background: transparent; color: #666; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.3s; font-family: inherit; }
-.tab.active { background: rgba(108,92,231,0.2); color: #fff; }
-.tab i { margin-right: 6px; }
-
-/* Tab Content */
-.tab-content { display: none; animation: spaceInDown 0.5s cubic-bezier(0.23,1,0.32,1); }
-.tab-content.active { display: block; }
-
-/* Add Form */
-.form-card { background: linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 30px; }
-.form-card h3 { font-size: 18px; margin-bottom: 20px; }
-.form-card h3 i { color: #6c5ce7; margin-right: 8px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.form-group { margin-bottom: 16px; }
-.form-group label { display: block; color: #888; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
-.form-group input,.form-group textarea,.form-group select { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #fff; font-size: 14px; outline: none; transition: 0.3s; font-family: inherit; }
-.form-group input:focus,.form-group textarea:focus,.form-group select:focus { border-color: #6c5ce7; box-shadow: 0 0 20px rgba(108,92,231,0.1); }
-.form-group textarea { resize: vertical; min-height: 80px; }
-.form-group select option { background: #111; color: #fff; }
-.form-group .helper { color: #555; font-size: 11px; margin-top: 4px; }
-.submit-btn { padding: 14px 40px; border-radius: 12px; border: none; background: linear-gradient(135deg,#6c5ce7,#a29bfe); color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.3s; font-family: inherit; }
-.submit-btn:hover { transform: scale(1.02); box-shadow: 0 8px 30px rgba(108,92,231,0.3); }
-.submit-btn i { margin-right: 8px; }
-.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Apps List */
-.apps-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.apps-header h3 { font-size: 18px; }
-.apps-header h3 i { color: #6c5ce7; margin-right: 8px; }
-.app-item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: linear-gradient(145deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01)); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; margin-bottom: 10px; transition: 0.3s; animation: spaceInDown 0.4s cubic-bezier(0.23,1,0.32,1) both; }
-.app-item:hover { border-color: rgba(108,92,231,0.2); }
-.app-item img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
-.app-item .app-info { flex: 1; min-width: 0; }
-.app-item .app-info .app-name { font-size: 14px; font-weight: 600; }
-.app-item .app-info .app-meta { color: #666; font-size: 12px; margin-top: 2px; }
-.app-item .app-actions { display: flex; gap: 8px; flex-shrink: 0; }
-.app-item .app-actions button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #888; cursor: pointer; transition: 0.3s; font-size: 13px; display: flex; align-items: center; justify-content: center; }
-.app-item .app-actions .edit-btn:hover { border-color: #6c5ce7; color: #6c5ce7; }
-.app-item .app-actions .del-btn:hover { border-color: #e74c3c; color: #e74c3c; }
-
-/* Settings tab */
-.settings-group { margin-bottom: 24px; }
-.settings-group h4 { font-size: 14px; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-.settings-group .setting-item { padding: 14px 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-.settings-group .setting-item .si-label { font-size: 13px; }
-.settings-group .setting-item .si-label small { display: block; color: #555; font-size: 11px; margin-top: 2px; }
-.settings-group .setting-item .si-value { font-size: 11px; color: #666; background: rgba(255,255,255,0.05); padding: 4px 10px; border-radius: 6px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* Toast */
-.toast { position: fixed; bottom: 30px; right: 30px; z-index: 9999; padding: 14px 24px; border-radius: 12px; font-size: 14px; font-weight: 500; transform: translateY(100px); opacity: 0; transition: 0.4s; pointer-events: none; }
-.toast.show { transform: translateY(0); opacity: 1; }
-.toast.success { background: rgba(0,206,201,0.15); border: 1px solid rgba(0,206,201,0.3); color: #00cec9; }
-.toast.error { background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.3); color: #e74c3c; }
-.toast.info { background: rgba(108,92,231,0.15); border: 1px solid rgba(108,92,231,0.3); color: #6c5ce7; }
-.toast i { margin-right: 8px; }
-
-/* Modal overlay for publish */
-.publish-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(20px); z-index: 500; display: none; align-items: center; justify-content: center; padding: 20px; }
-.publish-modal.show { display: flex; }
-.publish-box { background: linear-gradient(145deg,rgba(20,20,20,0.95),rgba(10,10,10,0.98)); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 36px; max-width: 500px; width: 100%; text-align: center; animation: spaceInDown 0.5s cubic-bezier(0.23,1,0.32,1); }
-.publish-box .big-icon { font-size: 56px; color: #6c5ce7; margin-bottom: 16px; }
-.publish-box h3 { font-size: 22px; margin-bottom: 8px; }
-.publish-box p { color: #888; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
-.publish-box .steps { text-align: left; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
-.publish-box .steps li { color: #999; font-size: 13px; padding: 6px 0; list-style: none; }
-.publish-box .steps li i { color: #6c5ce7; margin-right: 8px; width: 18px; text-align: center; }
-.publish-box .publish-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-
-/* Responsive */
-@media(max-width:768px) {
-    .dash-nav { padding: 12px 20px; flex-wrap: wrap; gap: 10px; }
-    .dash-main { padding: 80px 16px 20px; }
-    .form-row { grid-template-columns: 1fr; }
-    .stats { grid-template-columns: 1fr 1fr; }
-    .app-item { flex-wrap: wrap; }
-    .tabs { overflow-x: auto; }
-}
-
-/* Animations */
-@keyframes spaceInDown { 0% { opacity: 0; transform: scale(0.2) translateY(-200px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#08090c;--flap:#14161d;--flap2:#0d0f14;--steel:#232833;--line:#262c38;--paper:#eef0ff;--mut:#a9afc2;--dim:#828aa0;--pur:#6c5ce7;--pur2:#8b7cff;--tea:#00cec9;--red:#ff5d5d}
+html{scrollbar-color:var(--pur) #0a0b0e}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--ink);color:var(--paper);overflow-x:hidden;-webkit-user-select:none;user-select:none;caret-color:var(--tea)}
+::selection{background:var(--pur);color:#fff}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:#0a0b0e}::-webkit-scrollbar-thumb{background:var(--steel);border-radius:4px}
+img{-webkit-user-drag:none;user-drag:none}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--tea);outline-offset:2px}
+.gate{position:fixed;inset:0;background:var(--ink);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate.hidden{display:none}
+.gate-box{text-align:center;max-width:440px;width:100%;background:linear-gradient(180deg,#161a22,#0b0d11);border:1px solid var(--line);border-radius:20px;padding:40px 34px;animation:flap .6s cubic-bezier(.2,.9,.25,1)}
+@keyframes flap{0%{opacity:0;transform:perspective(800px) rotateX(-30deg)}100%{opacity:1;transform:none}}
+.gate-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.24em;color:var(--dim);margin-bottom:14px}
+.gate-tag b{color:var(--tea)}
+.gate-icon{font-size:46px;color:var(--pur2);margin-bottom:14px}
+.gate h1{font-family:'Barlow Condensed',sans-serif;font-size:42px;letter-spacing:.08em;line-height:1}
+.gate p{color:var(--mut);font-size:13.5px;margin:8px 0 24px}
+.gate-input{width:100%;padding:15px 18px;border-radius:12px;border:1px solid var(--line);background:#0b0d12;color:var(--paper);font-size:16px;outline:none;transition:.25s;font-family:'JetBrains Mono',monospace;text-align:center;letter-spacing:.35em;caret-color:var(--tea)}
+.gate-input:focus{border-color:var(--pur);box-shadow:0 0 0 3px rgba(108,92,231,.22)}
+.gate-btn{width:100%;margin-top:14px;padding:15px;border-radius:12px;border:none;background:var(--pur);color:#fff;font-size:14px;font-weight:700;letter-spacing:.1em;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.gate-btn:hover{background:var(--pur2)}
+.gate-btn:disabled{opacity:.55;cursor:wait}
+.gate-error{color:var(--red);font-size:12px;margin-top:12px;display:none;font-family:'JetBrains Mono',monospace;letter-spacing:.08em}
+.gate-error.show{display:block}
+.dashboard{display:none}.dashboard.show{display:block}
+.dash-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:12px 26px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(10,11,15,.93);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.dash-logo{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:.14em}
+.dash-logo i{color:var(--pur2);margin-right:8px}
+.dash-nav-links{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dash-nav-links button,.dash-nav-links a{padding:9px 17px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--mut);cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.05em;transition:.22s;font-family:'JetBrains Mono',monospace;text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+.dash-nav-links button:hover,.dash-nav-links a:hover{border-color:rgba(108,92,231,.5);color:#fff}
+.publish-btn{background:var(--pur)!important;border-color:var(--pur)!important;color:#fff!important}
+.publish-btn:hover{background:var(--pur2)!important}
+.saved-badge{font-size:11px;color:var(--tea);padding:7px 13px;border:1px solid rgba(0,206,201,.35);border-radius:20px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;background:rgba(0,206,201,.07)}
+.dash-main{padding:96px 26px 50px;max-width:1180px;margin:0 auto}
+.dash-title{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.dash-title h2{font-family:'Barlow Condensed',sans-serif;font-size:clamp(34px,4.6vw,54px);letter-spacing:.06em;line-height:1}
+.dash-title h2 em{font-style:normal;color:var(--pur2)}
+.dash-title p{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--dim)}
+.dash-title p b{color:var(--tea)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:linear-gradient(180deg,var(--flap),var(--flap2));border:1px solid var(--line);border-radius:15px;padding:18px;position:relative;overflow:hidden}
+.stat-card::after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.6);pointer-events:none}
+.stat-num{font-family:'JetBrains Mono',monospace;font-size:34px;font-weight:700;color:var(--paper);font-variant-numeric:tabular-nums}
+.stat-card:nth-child(1) .stat-num{color:var(--pur2)}
+.stat-card:nth-child(3) .stat-num{color:var(--tea)}
+.stat-label{color:var(--dim);font-size:11px;margin-top:6px;font-family:'JetBrains Mono',monospace;letter-spacing:.14em}
+.stat-icon{position:absolute;top:14px;right:14px;font-size:26px;color:#2a3040}
+.tabs{display:flex;gap:4px;margin-bottom:18px;background:#0b0d12;border:1px solid var(--line);border-radius:13px;padding:5px}
+.tab{flex:1;padding:12px;border-radius:9px;border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.08em;transition:.22s;font-family:'JetBrains Mono',monospace}
+.tab i{margin-right:7px}
+.tab.active{background:rgba(108,92,231,.2);color:#fff;box-shadow:inset 0 0 0 1px rgba(108,92,231,.45)}
+.tab-content{display:none}.tab-content.active{display:block;animation:flap .45s cubic-bezier(.2,.9,.25,1)}
+.form-card{background:linear-gradient(180deg,#141821,#0c0e12);border:1px solid var(--line);border-radius:17px;padding:28px}
+.form-card h3{font-family:'Barlow Condensed',sans-serif;font-size:27px;letter-spacing:.05em;margin-bottom:18px}
+.form-card h3 i{color:var(--pur2);margin-right:9px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{margin-bottom:15px}
+.form-group label{display:block;color:var(--dim);font-size:10.5px;font-weight:700;letter-spacing:.18em;margin-bottom:7px;font-family:'JetBrains Mono',monospace}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:12px 15px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:var(--paper);font-size:14px;outline:none;transition:.22s;font-family:'Inter',sans-serif;caret-color:var(--tea)}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--pur);box-shadow:0 0 0 3px rgba(108,92,231,.18)}
+.form-group select option{background:#111;color:#fff}
+.form-group textarea{resize:vertical;min-height:76px}
+.helper{color:var(--dim);font-size:11px;margin-top:5px}
+.submit-btn{padding:13px 30px;border-radius:11px;border:none;background:var(--pur);color:#fff;font-size:13px;font-weight:700;letter-spacing:.06em;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.submit-btn:hover{background:var(--pur2)}
+.apps-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.apps-header h3{font-family:'Barlow Condensed',sans-serif;font-size:26px;letter-spacing:.05em}
+.apps-header h3 i{color:var(--pur2);margin-right:8px}
+.apps-header h3 span{font-family:'JetBrains Mono',monospace;color:var(--pur2)}
+.app-item{display:flex;align-items:center;gap:15px;padding:14px 17px;background:linear-gradient(180deg,var(--flap),var(--flap2));border:1px solid var(--line);border-radius:13px;margin-bottom:9px;transition:.22s}
+.app-item:hover{border-color:rgba(108,92,231,.5)}
+.app-item img{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--line)}
+.app-info{flex:1;min-width:0}
+.app-name{font-size:14px;font-weight:700}
+.app-meta{font-family:'JetBrains Mono',monospace;color:var(--dim);font-size:11px;margin-top:3px;letter-spacing:.04em}
+.app-actions{display:flex;gap:8px}
+.app-actions button{width:35px;height:35px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--mut);cursor:pointer;font-size:13px}
+.edit-btn:hover{border-color:var(--pur)!important;color:var(--pur2)!important}
+.del-btn:hover{border-color:var(--red)!important;color:var(--red)!important}
+.settings-group{margin-bottom:22px}
+.settings-group h4{font-size:11px;color:var(--dim);margin-bottom:10px;letter-spacing:.2em;font-family:'JetBrains Mono',monospace}
+.setting-item{padding:13px 17px;background:#0b0d12;border:1px solid var(--line);border-radius:11px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.si-label{font-size:13px}.si-label small{display:block;color:var(--dim);font-size:11px;margin-top:2px}
+.si-value{font-size:11px;color:var(--mut);background:#141821;padding:5px 11px;border-radius:7px;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'JetBrains Mono',monospace}
+.publish-modal{position:fixed;inset:0;background:rgba(4,5,8,.85);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
+.publish-modal.show{display:flex}
+.publish-box{background:linear-gradient(180deg,#161a22,#0c0e12);border:1px solid var(--line);border-radius:20px;max-width:520px;width:100%;padding:34px;max-height:90vh;overflow-y:auto}
+.big-icon{font-size:48px;color:var(--pur2);margin-bottom:12px}
+.publish-box h3{font-family:'Barlow Condensed',sans-serif;font-size:32px;letter-spacing:.05em;margin-bottom:8px}
+.publish-box p{color:var(--mut);font-size:13.5px;line-height:1.65;margin-bottom:16px}
+.steps{list-style:none;margin-bottom:20px;display:flex;flex-direction:column;gap:9px}
+.steps li{font-size:13px;color:var(--mut);background:#0b0d12;border:1px solid var(--line);border-radius:10px;padding:11px 14px;list-style:none}
+.steps li i{color:var(--tea);margin-right:8px}
+.publish-actions{display:flex;gap:10px;flex-wrap:wrap}
+.toast{position:fixed;bottom:28px;right:28px;z-index:9999;padding:14px 22px;border-radius:12px;font-size:13.5px;font-weight:600;transform:translateY(90px);opacity:0;transition:.35s;pointer-events:none;font-family:'JetBrains Mono',monospace;max-width:min(420px,calc(100vw - 40px))}
+.toast.show{transform:none;opacity:1}
+.toast.success{background:#07211f;border:1px solid rgba(0,206,201,.5);color:var(--tea)}
+.toast.error{background:#221014;border:1px solid rgba(255,93,93,.5);color:var(--red)}
+.toast.info{background:#141322;border:1px solid rgba(108,92,231,.5);color:var(--pur2)}
+@media(max-width:720px){.form-row{grid-template-columns:1fr}.dash-main{padding:90px 16px 40px}.form-card{padding:20px}.tabs{flex-direction:column}}
+@media(prefers-reduced-motion:reduce){.gate-box,.tab-content.active{animation:none}}
 </style>
 </head>
 <body>
-<div class="bg-glow bg-glow-1"></div>
-<div class="bg-glow bg-glow-2"></div>
-
-<!-- ===== PASSWORD GATE ===== -->
+<!-- THESIS: a signal box, not an admin template. OWN-WORLD: ink box room, steel levers, roller counters, flap rows, Barlow Condensed orders, mono wiring data, purple dispatch / teal locked-in. STORY: unlock barrier, read counters, file manifest, shunt list, dispatch via clipboard. FIRST VIEWPORT: barrier gate; inside, counters, lever tabs, manifest. FORM: split-flap concourse, seed 6b638c72. FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance -->
 <div class="gate" id="passwordGate">
-    <div class="gate-box">
-        <div class="gate-icon"><i class="fas fa-lock"></i></div>
-        <h1>Dev Portal</h1>
-        <p>Enter password to access the developer dashboard</p>
-        <input type="password" class="gate-input" id="gateInput" placeholder="••••••••" autocomplete="off">
-        <button class="gate-btn" id="gateBtn"><i class="fas fa-unlock"></i> Unlock</button>
-        <div class="gate-error" id="gateError"><i class="fas fa-exclamation-circle"></i> Incorrect password</div>
-    </div>
+<div class="gate-box">
+<div class="gate-tag">CALLANIX · SIGNAL BOX <b>LOCKED</b></div>
+<div class="gate-icon"><i class="fas fa-lock"></i></div>
+<h1>DEV PORTAL</h1>
+<p>Barrier key required. One key opens the whole box room.</p>
+<input type="password" class="gate-input" id="gateInput" placeholder="••••••••" autocomplete="off" aria-label="Password">
+<button class="gate-btn" id="gateBtn"><i class="fas fa-unlock"></i> UNLOCK BARRIER</button>
+<div class="gate-error" id="gateError"><i class="fas fa-exclamation-circle"></i> WRONG KEY — TRY AGAIN</div>
 </div>
-
-<!-- ===== DASHBOARD ===== -->
+</div>
 <div class="dashboard" id="dashboard">
-    <!-- Nav -->
-    <nav class="dash-nav">
-        <div class="dash-logo"><i class="fas fa-code"></i> DEV PORTAL</div>
-        <div class="dash-nav-links">
-            <span class="saved-badge"><i class="fas fa-check-circle"></i> Saved Locally</span>
-            <button class="publish-btn" id="publishBtn"><i class="fas fa-cloud-upload-alt"></i> Publish to GitHub</button>
-            <button id="lockBtn"><i class="fas fa-lock"></i> Lock</button>
-        </div>
-    </nav>
-
-    <!-- Main -->
-    <div class="dash-main">
-        <!-- Stats -->
-        <div class="stats">
-            <div class="stat-card"><div class="stat-icon"><i class="fas fa-rocket"></i></div><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total Apps</div></div>
-            <div class="stat-card"><div class="stat-icon"><i class="fas fa-tag"></i></div><div class="stat-num" id="statCategories">0</div><div class="stat-label">Categories</div></div>
-            <div class="stat-card"><div class="stat-icon"><i class="fas fa-link"></i></div><div class="stat-num" id="statWithAd">0</div><div class="stat-label">With Ad Gateway</div></div>
-            <div class="stat-card"><div class="stat-icon"><i class="fas fa-save"></i></div><div class="stat-num" id="statSaved"><i class="fas fa-check-circle" style="font-size:18px;-webkit-text-fill-color:#00cec9;"></i></div><div class="stat-label">Auto-Saved</div></div>
-        </div>
-
-        <!-- Tabs -->
-        <div class="tabs" id="tabs">
-            <button class="tab active" data-tab="add"><i class="fas fa-plus-circle"></i> Add App</button>
-            <button class="tab" data-tab="list"><i class="fas fa-list"></i> All Apps</button>
-            <button class="tab" data-tab="settings"><i class="fas fa-cog"></i> Settings</button>
-        </div>
-
-        <!-- Tab: Add App -->
-        <div class="tab-content active" id="tabAdd">
-            <div class="form-card">
-                <h3><i class="fas fa-plus-circle"></i> <span id="formTitle">Add New App</span></h3>
-                <form id="appForm">
-                    <input type="hidden" id="editId">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>App Title *</label>
-                            <input type="text" id="fTitle" placeholder="e.g. My Amazing App" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Category *</label>
-                            <select id="fCategory" required>
-                                <option value="">Select category</option>
-                                <option value="games">🎮 Games</option>
-                                <option value="tools">🔧 Tools</option>
-                                <option value="entertainment">🎬 Entertainment</option>
-                                <option value="education">📚 Education</option>
-                                <option value="other">⭐ Other</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea id="fDesc" placeholder="Describe your app..." rows="3"></textarea>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>App URL *</label>
-                            <input type="url" id="fUrl" placeholder="https://yourapp.com" required>
-                            <div class="helper">The actual link to your app/website</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Ad Gateway URL (optional)</label>
-                            <input type="url" id="fAdUrl" placeholder="https://ad-link.com/your-ad">
-                            <div class="helper">Users see this ad before accessing your app</div>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Icon URL</label>
-                            <input type="url" id="fIcon" placeholder="https://example.com/icon.png">
-                            <div class="helper">App icon/logo image URL</div>
-                        </div>
-                        <div class="form-group">
-                            <label>Screenshot URLs (one per line)</label>
-                            <textarea id="fScreenshots" placeholder="https://example.com/shot1.jpg&#10;https://example.com/shot2.jpg" rows="3"></textarea>
-                            <div class="helper">One URL per line</div>
-                        </div>
-                    </div>
-                    <button type="submit" class="submit-btn" id="formSubmit"><i class="fas fa-save"></i> <span>Add App</span></button>
-                    <button type="button" class="submit-btn" id="formCancel" style="display:none;background:rgba(255,255,255,0.05);color:#888;margin-left:10px;"><i class="fas fa-times"></i> Cancel</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Tab: All Apps -->
-        <div class="tab-content" id="tabList">
-            <div class="apps-header">
-                <h3><i class="fas fa-layer-group"></i> <span id="listCount">0</span> Apps</h3>
-            </div>
-            <div id="appList"><p style="color:#555;text-align:center;padding:40px;">No apps yet. Add your first app!</p></div>
-        </div>
-
-        <!-- Tab: Settings -->
-        <div class="tab-content" id="tabSettings">
-            <div class="form-card">
-                <h3><i class="fas fa-cog"></i> Configuration</h3>
-                <div class="settings-group">
-                    <h4>GitHub Repository</h4>
-                    <div class="setting-item"><span class="si-label">Owner <small>GitHub username</small></span><span class="si-value" id="cfgOwner">-</span></div>
-                    <div class="setting-item"><span class="si-label">Repo <small>Repository name</small></span><span class="si-value" id="cfgRepo">-</span></div>
-                    <div class="setting-item"><span class="si-label">Data File</span><span class="si-value">data/links.json</span></div>
-                </div>
-                <div class="settings-group">
-                    <h4>User Store</h4>
-                    <div class="setting-item"><span class="si-label">Raw Data URL <small>Used by user store to fetch apps</small></span><span class="si-value" id="cfgRawUrl">-</span></div>
-                </div>
-                <div class="settings-group">
-                    <h4>Quick Actions</h4>
-                    <button class="submit-btn" id="exportBtn" style="margin-right:10px;"><i class="fas fa-download"></i> Export JSON</button>
-                    <button class="submit-btn" id="importBtn" style="background:rgba(255,255,255,0.05);color:#888;"><i class="fas fa-upload"></i> Import JSON</button>
-                    <input type="file" id="importFile" accept=".json" style="display:none;">
-                </div>
-            </div>
-        </div>
-    </div>
+<nav class="dash-nav">
+<div class="dash-logo"><i class="fas fa-tower-broadcast"></i> SIGNAL BOX</div>
+<div class="dash-nav-links">
+<span class="saved-badge"><i class="fas fa-check-circle"></i> SAVED LOCALLY</span>
+<button class="publish-btn" id="publishBtn"><i class="fas fa-cloud-upload-alt"></i> DISPATCH</button>
+<button id="lockBtn"><i class="fas fa-lock"></i> LOCK</button>
 </div>
-
-<!-- ===== PUBLISH MODAL ===== -->
-<div class="publish-modal" id="publishModal">
-    <div class="publish-box">
-        <div class="big-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-        <h3>Publish to GitHub</h3>
-        <p>Your app data is saved in your browser. To make it live on the User Store, paste it into the GitHub editor.</p>
-        <div class="steps">
-            <li><i class="fas fa-check-circle"></i> Step 1: Click "Copy Data" — JSON is copied to clipboard</li>
-            <li><i class="fas fa-check-circle"></i> Step 2: Click "Open GitHub Editor" — it opens the data file</li>
-            <li><i class="fas fa-check-circle"></i> Step 3: In GitHub: select all, paste, click "Commit changes"</li>
-            <li><i class="fas fa-check-circle"></i> Step 4: User Store updates instantly (may take 1-2 min cache)</li>
-        </div>
-        <div class="publish-actions">
-            <button class="submit-btn" id="copyBtn"><i class="fas fa-copy"></i> Copy Data</button>
-            <a class="submit-btn" id="githubEditLink" href="#" target="_blank" style="text-decoration:none;background:rgba(255,255,255,0.08);color:#fff;"><i class="fas fa-external-link-alt"></i> Open GitHub Editor</a>
-            <button class="submit-btn" id="closePublishBtn" style="background:transparent;color:#666;border:1px solid rgba(255,255,255,0.1);"><i class="fas fa-times"></i> Close</button>
-        </div>
-    </div>
+</nav>
+<div class="dash-main">
+<div class="dash-title">
+<div><h2>CONTROL <em>ROOM</em></h2></div>
+<p>BOX D · <b id="boxClock">--:--</b> · <a href="../" style="color:var(--pur2);text-decoration:none">← HALL 01</a></p>
 </div>
-
-<!-- Toast -->
-<div class="toast" id="toast"></div>
-
+<div class="stats">
+<div class="stat-card"><div class="stat-icon"><i class="fas fa-rocket"></i></div><div class="stat-num" id="statTotal">0</div><div class="stat-label">TOTAL ROLLING</div></div>
+<div class="stat-card"><div class="stat-icon"><i class="fas fa-tag"></i></div><div class="stat-num" id="statCategories">0</div><div class="stat-label">PLATFORMS</div></div>
+<div class="stat-card"><div class="stat-icon"><i class="fas fa-link"></i></div><div class="stat-num" id="statWithAd">0</div><div class="stat-label">VIA LOUNGE</div></div>
+<div class="stat-card"><div class="stat-icon"><i class="fas fa-save"></i></div><div class="stat-num" id="statSaved"><i class="fas fa-check-circle" style="font-size:19px;color:var(--tea)"></i></div><div class="stat-label">AUTO-SAVED</div></div>
+</div>
+<div class="tabs" id="tabs" role="tablist">
+<button class="tab active" data-tab="add"><i class="fas fa-plus-circle"></i> MANIFEST</button>
+<button class="tab" data-tab="list"><i class="fas fa-list"></i> SHUNT LIST</button>
+<button class="tab" data-tab="settings"><i class="fas fa-cog"></i> WIRING</button>
+</div>
+<div class="tab-content active" id="tabAdd">
+<div class="form-card">
+<h3><i class="fas fa-plus-circle"></i> <span id="formTitle">File New Departure</span></h3>
+<form id="appForm">
+<input type="hidden" id="editId">
+<div class="form-row">
+<div class="form-group"><label>APP TITLE *</label><input type="text" id="fTitle" placeholder="e.g. My Amazing App" required></div>
+<div class="form-group"><label>PLATFORM *</label><select id="fCategory" required>
+<option value="">Select platform</option>
+<option value="games">Games</option>
+<option value="tools">Tools</option>
+<option value="entertainment">Entertainment</option>
+<option value="education">Education</option>
+<option value="other">Other</option>
+</select></div>
+</div>
+<div class="form-group"><label>DESCRIPTION</label><textarea id="fDesc" placeholder="Describe your app..." rows="3"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label>APP URL *</label><input type="url" id="fUrl" placeholder="https://yourapp.com" required><div class="helper">Final destination of this departure.</div></div>
+<div class="form-group"><label>LOUNGE URL (OPTIONAL)</label><input type="url" id="fAdUrl" placeholder="https://ad-link.com/your-ad"><div class="helper">Holding-lounge link shown for 5 seconds first.</div></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>ICON URL</label><input type="url" id="fIcon" placeholder="https://example.com/icon.png"><div class="helper">Square badge for the flap row.</div></div>
+<div class="form-group"><label>SCREENSHOT URLS — ONE PER LINE</label><textarea id="fScreenshots" placeholder="https://example.com/shot1.jpg&#10;https://example.com/shot2.jpg" rows="3"></textarea><div class="helper">First three ride on the flap.</div></div>
+</div>
+<button type="submit" class="submit-btn" id="formSubmit"><i class="fas fa-save"></i> <span>File Departure</span></button>
+<button type="button" class="submit-btn" id="formCancel" style="display:none;background:#1a1f2a;color:var(--mut);margin-left:10px;"><i class="fas fa-times"></i> Cancel</button>
+</form>
+</div>
+</div>
+<div class="tab-content" id="tabList">
+<div class="apps-header"><h3><i class="fas fa-layer-group"></i> <span id="listCount">0</span> ROLLING</h3></div>
+<div id="appList"><p style="color:var(--dim);text-align:center;padding:40px;">No departures filed yet.</p></div>
+</div>
+<div class="tab-content" id="tabSettings">
+<div class="form-card">
+<h3><i class="fas fa-cog"></i> Box Wiring</h3>
+<div class="settings-group">
+<h4>GITHUB REPOSITORY</h4>
+<div class="setting-item"><span class="si-label">Owner <small>GitHub username</small></span><span class="si-value" id="cfgOwner">-</span></div>
+<div class="setting-item"><span class="si-label">Repo <small>Repository name</small></span><span class="si-value" id="cfgRepo">-</span></div>
+<div class="setting-item"><span class="si-label">Data File</span><span class="si-value">data/links.json</span></div>
+</div>
+<div class="settings-group">
+<h4>USER STORE FEED</h4>
+<div class="setting-item"><span class="si-label">Raw Data URL <small>Concourse U reads this file</small></span><span class="si-value" id="cfgRawUrl">-</span></div>
+</div>
+<div class="settings-group">
+<h4>QUICK ACTIONS</h4>
+<button class="submit-btn" id="exportBtn" style="margin-right:10px;"><i class="fas fa-download"></i> Export JSON</button>
+<button class="submit-btn" id="importBtn" style="background:#1a1f2a;color:var(--mut);"><i class="fas fa-upload"></i> Import JSON</button>
+<input type="file" id="importFile" accept=".json" style="display:none;">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="publish-modal" id="publishModal" role="dialog" aria-modal="true">
+<div class="publish-box">
+<div class="big-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+<h3>DISPATCH TO GITHUB</h3>
+<p>Rolling stock is saved in this browser. To put it on the concourse board, paste it into the repo editor.</p>
+<div class="steps">
+<li><i class="fas fa-check-circle"></i> 1 — Copy Data: JSON goes to clipboard</li>
+<li><i class="fas fa-check-circle"></i> 2 — Open GitHub Editor: the live data file</li>
+<li><i class="fas fa-check-circle"></i> 3 — Select all, paste, Commit changes</li>
+<li><i class="fas fa-check-circle"></i> 4 — Concourse U refreshes in 1–2 min</li>
+</div>
+<div class="publish-actions">
+<button class="submit-btn" id="copyBtn"><i class="fas fa-copy"></i> Copy Data</button>
+<a class="submit-btn" id="githubEditLink" href="#" target="_blank" style="text-decoration:none;background:#1a1f2a;color:#fff;"><i class="fas fa-external-link-alt"></i> Open GitHub Editor</a>
+<button class="submit-btn" id="closePublishBtn" style="background:transparent;color:var(--dim);border:1px solid var(--line);"><i class="fas fa-times"></i> Close</button>
+</div>
+</div>
+</div>
+<div class="toast" id="toast" role="status"></div>
 <script>
-// ============================================================
-// Anti-devtools
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('keydown',e=>{
-    if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','C','J'].includes(e.key))||(e.ctrlKey&&['u','s'].includes(e.key))) e.preventDefault();
+if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','C','J'].includes(e.key))||(e.ctrlKey&&['u','s'].includes(e.key))) e.preventDefault();
 });
 ['contextmenu','selectstart','copy','cut','dragstart'].forEach(e=>document.addEventListener(e,e=>e.preventDefault()));
-
-// ============================================================
-// SHA-256 Hashing
+function tick(){var d=new Date(),p=function(n){return String(n).padStart(2,'0')};var el=document.getElementById('boxClock');if(el)el.textContent=p(d.getHours())+':'+p(d.getMinutes());}
+tick();setInterval(tick,15000);
 async function sha256(str) {
-    const buf = new TextEncoder().encode(str);
-    const hash = await crypto.subtle.digest('SHA-256', buf);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+const buf = new TextEncoder().encode(str);
+const hash = await crypto.subtle.digest('SHA-256', buf);
+return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
-
-// ============================================================
-// State
 let apps = [];
 let editingId = null;
-
-// DOM refs
 const gate = document.getElementById('passwordGate');
 const gateInput = document.getElementById('gateInput');
 const gateBtn = document.getElementById('gateBtn');
@@ -363,315 +277,169 @@ const publishModal = document.getElementById('publishModal');
 const copyBtn = document.getElementById('copyBtn');
 const githubEditLink = document.getElementById('githubEditLink');
 const closePublishBtn = document.getElementById('closePublishBtn');
-
-// ============================================================
-// Password Auth
 let authenticated = false;
-
 async function checkPassword(input) {
-    const hash = await sha256(input);
-    return hash === CONFIG.PASSWORD_HASH;
+const hash = await sha256(input);
+return hash === CONFIG.PASSWORD_HASH;
 }
-
 gateBtn.addEventListener('click', async () => {
-    const pw = gateInput.value;
-    if (!pw) { shakeInput(); return; }
-    gateBtn.disabled = true;
-    gateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
-    const ok = await checkPassword(pw);
-    if (ok) {
-        authenticated = true;
-        gate.classList.add('hidden');
-        dashboard.classList.add('show');
-        initDashboard();
-    } else {
-        gateError.classList.add('show');
-        gateBtn.disabled = false;
-        gateBtn.innerHTML = '<i class="fas fa-unlock"></i> Unlock';
-        gateInput.value = '';
-        gateInput.focus();
-    }
+const pw = gateInput.value;
+if (!pw) { shakeInput(); return; }
+gateBtn.disabled = true;
+gateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> CHECKING…';
+const ok = await checkPassword(pw);
+if (ok) { authenticated = true;gate.classList.add('hidden');dashboard.classList.add('show');initDashboard(); }
+else { gateError.classList.add('show');gateBtn.disabled = false;gateBtn.innerHTML = '<i class="fas fa-unlock"></i> UNLOCK BARRIER';gateInput.value = '';gateInput.focus(); }
 });
-
 gateInput.addEventListener('keydown', e => { if (e.key === 'Enter') gateBtn.click(); });
 gateInput.addEventListener('input', () => gateError.classList.remove('show'));
-
-function shakeInput() { gateInput.style.borderColor = '#e74c3c'; setTimeout(() => { gateInput.style.borderColor = ''; }, 500); }
-
-// Lock
+function shakeInput() { gateInput.style.borderColor = '#ff5d5d'; setTimeout(() => { gateInput.style.borderColor = ''; }, 500); }
 lockBtn.addEventListener('click', () => {
-    authenticated = false;
-    dashboard.classList.remove('show');
-    gate.classList.remove('hidden');
-    gateInput.value = '';
-    gateInput.focus();
-    gateBtn.disabled = false;
-    gateBtn.innerHTML = '<i class="fas fa-unlock"></i> Unlock';
+authenticated = false;dashboard.classList.remove('show');gate.classList.remove('hidden');
+gateInput.value = '';gateInput.focus();gateBtn.disabled = false;gateBtn.innerHTML = '<i class="fas fa-unlock"></i> UNLOCK BARRIER';
 });
-
-// ============================================================
-// Dashboard Init
-function initDashboard() {
-    showConfig();
-    loadApps();
-    renderStats();
-    renderAppList();
-    setupTabs();
-    setupForm();
-    setupExportImport();
-    setupPublish();
-}
-
-// Show config in settings
+function initDashboard() { showConfig();loadApps();renderStats();renderAppList();setupTabs();setupForm();setupExportImport();setupPublish(); }
 function showConfig() {
-    document.getElementById('cfgOwner').textContent = CONFIG.GITHUB_OWNER;
-    document.getElementById('cfgRepo').textContent = CONFIG.GITHUB_REPO;
-    document.getElementById('cfgRawUrl').textContent = CONFIG.RAW_DATA_URL;
+document.getElementById('cfgOwner').textContent = CONFIG.GITHUB_OWNER;
+document.getElementById('cfgRepo').textContent = CONFIG.GITHUB_REPO;
+document.getElementById('cfgRawUrl').textContent = CONFIG.RAW_DATA_URL;
 }
-
-// ============================================================
-// Data Loading & Saving (localStorage only — no GitHub API)
 function loadApps() {
-    const local = localStorage.getItem('callanix_apps');
-    if (local) {
-        try { apps = JSON.parse(local); } catch(e) { apps = []; }
-    }
-    if (!Array.isArray(apps)) apps = [];
+const local = localStorage.getItem('callanix_apps');
+if (local) { try { apps = JSON.parse(local); } catch(e) { apps = []; } }
+if (!Array.isArray(apps)) apps = [];
 }
-
-function saveLocal() {
-    localStorage.setItem('callanix_apps', JSON.stringify(apps));
-}
-
-// ============================================================
-// Publish to GitHub flow
+function saveLocal() { localStorage.setItem('callanix_apps', JSON.stringify(apps)); }
 function setupPublish() {
-    publishBtn.addEventListener('click', () => {
-        if (apps.length === 0) {
-            showToast('No apps to publish. Add some apps first!', 'error');
-            return;
-        }
-        // Build GitHub editor URL
-        const url = `https://github.com/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/edit/main/data/links.json`;
-        githubEditLink.href = url;
-        publishModal.classList.add('show');
-    });
-
-    copyBtn.addEventListener('click', () => {
-        const json = JSON.stringify(apps, null, 2);
-        navigator.clipboard.writeText(json).then(() => {
-            showToast('Data copied to clipboard! Now open GitHub editor and paste.', 'success');
-            copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-            setTimeout(() => { copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Data'; }, 2000);
-        }).catch(() => {
-            // Fallback for older browsers
-            const ta = document.createElement('textarea');
-            ta.value = json;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            showToast('Data copied! Now open GitHub editor and paste.', 'success');
-            copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-            setTimeout(() => { copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Data'; }, 2000);
-        });
-    });
-
-    closePublishBtn.addEventListener('click', () => publishModal.classList.remove('show'));
-    publishModal.addEventListener('click', (e) => { if (e.target === publishModal) publishModal.classList.remove('show'); });
-}
-
-// ============================================================
-// Stats
-function renderStats() {
-    statTotal.textContent = apps.length;
-    const cats = new Set(apps.map(a => a.category));
-    statCategories.textContent = cats.size;
-    statWithAd.textContent = apps.filter(a => a.adUrl).length;
-}
-
-// ============================================================
-// App List
-function renderAppList() {
-    if (apps.length === 0) {
-        appList.innerHTML = '<p style="color:#555;text-align:center;padding:40px;"><i class="fas fa-box-open" style="font-size:40px;display:block;margin-bottom:12px;"></i>No apps yet. Add your first app!</p>';
-        listCount.textContent = '0';
-        return;
-    }
-    listCount.textContent = apps.length;
-    appList.innerHTML = '';
-    apps.slice().reverse().forEach((app, i) => {
-        const div = document.createElement('div');
-        div.className = 'app-item';
-        div.style.animationDelay = (i * 0.05) + 's';
-        div.innerHTML = `
-            <img src="${app.iconUrl||'https://via.placeholder.com/44/6c5ce7/ffffff?text=A'}" alt="" onerror="this.src='https://via.placeholder.com/44/6c5ce7/ffffff?text=?'">
-            <div class="app-info">
-                <div class="app-name">${app.title||'Untitled'}</div>
-                <div class="app-meta">${app.category||'other'} ${app.adUrl ? '• <i class="fas fa-ad" style="color:#fdcb6e;"></i> Ad' : ''} • ${app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'No date'}</div>
-            </div>
-            <div class="app-actions">
-                <button class="edit-btn" data-id="${app.id}"><i class="fas fa-pen"></i></button>
-                <button class="del-btn" data-id="${app.id}"><i class="fas fa-trash"></i></button>
-            </div>
-        `;
-        div.querySelector('.edit-btn').addEventListener('click', () => editApp(app.id));
-        div.querySelector('.del-btn').addEventListener('click', () => deleteApp(app.id));
-        appList.appendChild(div);
-    });
-}
-
-// ============================================================
-// CRUD Operations
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-}
-
-// Add / Update
-appForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = editId.value || generateId();
-    const screenshots = fScreenshots.value.split('\n').map(s => s.trim()).filter(s => s);
-    const appData = {
-        id: id,
-        title: fTitle.value.trim(),
-        category: fCategory.value,
-        description: fDesc.value.trim(),
-        url: fUrl.value.trim(),
-        adUrl: fAdUrl.value.trim() || '',
-        iconUrl: fIcon.value.trim() || '',
-        screenshots: screenshots,
-        createdAt: editingId ? (apps.find(a => a.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-
-    if (editingId) {
-        const idx = apps.findIndex(a => a.id === editingId);
-        if (idx !== -1) apps[idx] = appData;
-        showToast('App updated successfully!', 'success');
-    } else {
-        apps.push(appData);
-        showToast('App added successfully!', 'success');
-    }
-
-    saveLocal();
-    renderStats();
-    renderAppList();
-    resetForm();
+publishBtn.addEventListener('click', () => {
+if (apps.length === 0) { showToast('No departures to dispatch. File one first!', 'error');return; }
+const url = 'https://github.com/'+CONFIG.GITHUB_OWNER+'/'+CONFIG.GITHUB_REPO+'/edit/main/data/links.json';
+githubEditLink.href = url;publishModal.classList.add('show');
 });
-
-// Edit
+copyBtn.addEventListener('click', () => {
+const json = JSON.stringify(apps, null, 2);
+navigator.clipboard.writeText(json).then(() => {
+showToast('Manifest copied! Paste it in the GitHub editor.', 'success');
+copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+setTimeout(() => { copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Data'; }, 2000);
+}).catch(() => {
+const ta = document.createElement('textarea');ta.value = json;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+showToast('Manifest copied! Paste it in the GitHub editor.', 'success');
+copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+setTimeout(() => { copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Data'; }, 2000);
+});
+});
+closePublishBtn.addEventListener('click', () => publishModal.classList.remove('show'));
+publishModal.addEventListener('click', (e) => { if (e.target === publishModal) publishModal.classList.remove('show'); });
+}
+function renderStats() {
+statTotal.textContent = apps.length;
+const cats = new Set(apps.map(a => a.category));
+statCategories.textContent = cats.size;
+statWithAd.textContent = apps.filter(a => a.adUrl).length;
+}
+function renderAppList() {
+if (apps.length === 0) {
+appList.innerHTML = '<p style="color:var(--dim);text-align:center;padding:40px;">No departures filed yet. File the first one.</p>';
+listCount.textContent = '0';return;
+}
+listCount.textContent = apps.length;appList.innerHTML = '';
+apps.slice().reverse().forEach((app) => {
+const div = document.createElement('div');div.className = 'app-item';
+div.innerHTML =
+'<img src="'+(app.iconUrl||'https://via.placeholder.com/44/6c5ce7/ffffff?text=A')+'" alt="" onerror="this.src=\'https://via.placeholder.com/44/6c5ce7/ffffff?text=?\'">'+
+'<div class="app-info"><div class="app-name">'+(app.title||'Untitled').toUpperCase()+'</div>'+
+'<div class="app-meta">'+(app.category||'other').toUpperCase()+(app.adUrl ? ' · VIA LOUNGE' : ' · DIRECT')+'</div></div>'+
+'<div class="app-actions"><button class="edit-btn" data-id="'+app.id+'" aria-label="Edit"><i class="fas fa-pen"></i></button><button class="del-btn" data-id="'+app.id+'" aria-label="Delete"><i class="fas fa-trash"></i></button></div>';
+div.querySelector('.edit-btn').addEventListener('click', () => editApp(app.id));
+div.querySelector('.del-btn').addEventListener('click', () => deleteApp(app.id));
+appList.appendChild(div);
+});
+}
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
+appForm.addEventListener('submit', (e) => {
+e.preventDefault();
+const id = editId.value || generateId();
+const screenshots = fScreenshots.value.split('\n').map(s => s.trim()).filter(s => s);
+const appData = {
+id: id,title: fTitle.value.trim(),category: fCategory.value,description: fDesc.value.trim(),
+url: fUrl.value.trim(),adUrl: fAdUrl.value.trim() || '',iconUrl: fIcon.value.trim() || '',
+screenshots: screenshots,
+createdAt: editingId ? (apps.find(a => a.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+updatedAt: new Date().toISOString()
+};
+if (editingId) {
+const idx = apps.findIndex(a => a.id === editingId);
+if (idx !== -1) apps[idx] = appData;
+showToast('Departure updated.', 'success');
+} else { apps.push(appData);showToast('Departure filed.', 'success'); }
+saveLocal();renderStats();renderAppList();resetForm();
+});
 function editApp(id) {
-    const app = apps.find(a => a.id === id);
-    if (!app) return;
-    editingId = id;
-    editId.value = id;
-    fTitle.value = app.title || '';
-    fCategory.value = app.category || '';
-    fDesc.value = app.description || '';
-    fUrl.value = app.url || '';
-    fAdUrl.value = app.adUrl || '';
-    fIcon.value = app.iconUrl || '';
-    fScreenshots.value = (app.screenshots || []).join('\n');
-    formTitle.textContent = 'Edit App';
-    formSubmit.querySelector('span').textContent = 'Update App';
-    formCancel.style.display = 'inline-block';
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelector('[data-tab="add"]').classList.add('active');
-    Object.values(tabContents).forEach(tc => tc.classList.remove('active'));
-    tabContents.add.classList.add('active');
-    fTitle.focus();
+const app = apps.find(a => a.id === id);if (!app) return;
+editingId = id;editId.value = id;
+fTitle.value = app.title || '';fCategory.value = app.category || '';fDesc.value = app.description || '';
+fUrl.value = app.url || '';fAdUrl.value = app.adUrl || '';fIcon.value = app.iconUrl || '';
+fScreenshots.value = (app.screenshots || []).join('\n');
+formTitle.textContent = 'Edit Departure';
+formSubmit.querySelector('span').textContent = 'Update Departure';
+formCancel.style.display = 'inline-block';
+document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+document.querySelector('[data-tab="add"]').classList.add('active');
+Object.values(tabContents).forEach(tc => tc.classList.remove('active'));
+tabContents.add.classList.add('active');
+fTitle.focus();
 }
-
-// Delete
 function deleteApp(id) {
-    if (!confirm('Are you sure you want to delete this app?')) return;
-    apps = apps.filter(a => a.id !== id);
-    saveLocal();
-    renderStats();
-    renderAppList();
-    showToast('App deleted.', 'info');
+if (!confirm('Remove this departure from the board?')) return;
+apps = apps.filter(a => a.id !== id);
+saveLocal();renderStats();renderAppList();showToast('Departure removed.', 'info');
 }
-
-// Reset form
 function resetForm() {
-    editingId = null;
-    editId.value = '';
-    appForm.reset();
-    formTitle.textContent = 'Add New App';
-    formSubmit.querySelector('span').textContent = 'Add App';
-    formCancel.style.display = 'none';
+editingId = null;editId.value = '';appForm.reset();
+formTitle.textContent = 'File New Departure';
+formSubmit.querySelector('span').textContent = 'File Departure';
+formCancel.style.display = 'none';
 }
-
 formCancel.addEventListener('click', resetForm);
-
-// ============================================================
-// Tabs
 function setupTabs() {
-    tabs.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            Object.values(tabContents).forEach(tc => tc.classList.remove('active'));
-            const target = tab.dataset.tab;
-            if (tabContents[target]) tabContents[target].classList.add('active');
-        });
-    });
+tabs.querySelectorAll('.tab').forEach(tab => {
+tab.addEventListener('click', () => {
+tabs.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+tab.classList.add('active');
+Object.values(tabContents).forEach(tc => tc.classList.remove('active'));
+const target = tab.dataset.tab;
+if (tabContents[target]) tabContents[target].classList.add('active');
+});
+});
 }
-
-// ============================================================
-// Form setup
-function setupForm() {
-    fCategory.value = '';
-}
-
-// ============================================================
-// Export / Import
+function setupForm() { fCategory.value = ''; }
 function setupExportImport() {
-    exportBtn.addEventListener('click', () => {
-        const blob = new Blob([JSON.stringify(apps, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'callanix-apps-backup.json';
-        a.click();
-        URL.revokeObjectURL(a.href);
-        showToast('Data exported!', 'success');
-    });
-
-    importBtn.addEventListener('click', () => importFile.click());
-    importFile.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            try {
-                const data = JSON.parse(ev.target.result);
-                if (Array.isArray(data)) {
-                    apps = data;
-                    saveLocal();
-                    renderStats();
-                    renderAppList();
-                    showToast('Data imported! ' + data.length + ' apps loaded.', 'success');
-                } else {
-                    showToast('Invalid file format.', 'error');
-                }
-            } catch(err) {
-                showToast('Invalid JSON file.', 'error');
-            }
-        };
-        reader.readAsText(file);
-        importFile.value = '';
-    });
+exportBtn.addEventListener('click', () => {
+const blob = new Blob([JSON.stringify(apps, null, 2)], { type: 'application/json' });
+const a = document.createElement('a');a.href = URL.createObjectURL(blob);a.download = 'callanix-apps-backup.json';a.click();
+URL.revokeObjectURL(a.href);showToast('Backup exported.', 'success');
+});
+importBtn.addEventListener('click', () => importFile.click());
+importFile.addEventListener('change', (e) => {
+const file = e.target.files[0];if (!file) return;
+const reader = new FileReader();
+reader.onload = (ev) => {
+try {
+const data = JSON.parse(ev.target.result);
+if (Array.isArray(data)) { apps = data;saveLocal();renderStats();renderAppList();showToast('Imported ' + data.length + ' departures.', 'success'); }
+else { showToast('Invalid file format.', 'error'); }
+} catch(err) { showToast('Invalid JSON file.', 'error'); }
+};
+reader.readAsText(file);importFile.value = '';
+});
 }
-
-// ============================================================
-// Toast
 function showToast(msg, type) {
-    toast.className = 'toast ' + type + ' show';
-    const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
-    toast.innerHTML = `<i class="fas ${icons[type]||'fa-info-circle'}"></i> ${msg}`;
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => toast.classList.remove('show'), 3000);
+toast.className = 'toast ' + type + ' show';
+const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+toast.innerHTML = '<i class="fas '+(icons[type]||'fa-info-circle')+'"></i> ' + msg;
+clearTimeout(toast._timer);
+toast._timer = setTimeout(() => toast.classList.remove('show'), 3000);
 }
 </script>
 </body>

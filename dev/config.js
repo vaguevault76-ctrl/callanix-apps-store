@@ -10,7 +10,7 @@ const CONFIG = {
     // Default: "admin123" (SHA-256 hashed below)
     // To change: go to https://emn178.github.io/online-tools/sha256.html
     // Type your password, copy the hash, paste it here
-    PASSWORD_HASH: 'a7c777ee10c0cd8b00e50b89b38c384d1fe0c09928a82934edbeb8774b4ddc1a',
+    PASSWORD_HASH: '6f58237b15fd361ff8b7e76d6bd6322f11069f0320472a9ada58d7b6e64bfab9',
 
     // --- GitHub Repository (for publishing data) ---
     GITHUB_OWNER: 'vaguevault76-ctrl',
