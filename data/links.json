@@ -1,22 +1,5 @@
 [
   {
-    "id": "app-4",
-    "title": "Worms Zone .io - Hungry Snake",
-    "category": "games",
-    "description": "A Perfect game...",
-    "url": "https://play.google.com/store/apps/details?id=com.wildspike.wormszone&pcampaignid=merch_published_cluster_promotion_battlestar_browse_all_games&hl=en_IN",
-    "adUrl": "",
-    "iconUrl": "https://play-lh.googleusercontent.com/CeH-dTW_RmKEp5Y-1SmdfUhWFutk9uX8pNWJJZ64OqPNQvbvpGp4uG7JiJAJPYojunN8CcBsQx_6SC99kzuTXw=s48-rw",
-    "screenshots": [
-      "https://play-lh.googleusercontent.com/J7oIW--FosP2pLHrSaofHlBFNfhMs6ybZC4InwzJLGknhizes9ByBxfXsjZzfZoO2pZ-mXKUCSNNzYOyO7MmUA=w526-h296-rw",
-      "https://play-lh.googleusercontent.com/u1NyAs5dxPNlm5WX4bHdjivSXIsFi6WYL7q4DrEJZlHrdLa6vuK20eQNAjeuQ7ZoJdRDIF_rUqXaEfFBORuLzg=w526-h296-rw",
-      "https://play-lh.googleusercontent.com/q5Ysd3o7Mk5bgvcRAxZQs8hAp2T4iulYG1kbFtI5pu3w-Rh-2Cn-fdUCWfAdnr19Ki2n9NZoZZx6FsjoFi_Ae2k=w526-h296-rw"
-    ],
-    "createdAt": "2026-09-04T15:42:39.682Z",
-    "updatedAt": "2026-09-04T17:03:28.192Z",
-    "submittedBy": "vaguevault76-ctrl"
-  },
-  {
     "id": "app-3",
     "title": "Microsoft Edge",
     "category": "tools",
