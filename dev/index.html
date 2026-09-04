@@ -108,7 +108,9 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <input type="text" id="sAppId" placeholder="e.g. app-42">
 <button type="button" class="ghost-btn" id="loadBtn"><i class="fas fa-download"></i> LOAD CURRENT</button>
 </div>
-<div class="helper">For edits and removals. Click LOAD CURRENT to pull the live values below.</div></div>
+<div class="helper">For edits and removals. Click LOAD CURRENT to pull the live values below.</div>
+<div style="margin-top:12px"><label style="display:block;color:var(--dim);font-size:10.5px;font-weight:700;letter-spacing:.18em;margin-bottom:7px;font-family:'JetBrains Mono',monospace">PICK FROM LIVE STORE (EASIEST — NO PASTING)</label>
+<select id="sPick" style="width:100%;padding:12px 15px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:var(--paper);font-size:14px;outline:none;font-family:'Inter',sans-serif"><option value="">Loading live apps…</option></select></div></div>
 <div class="form-row">
 <div class="form-group"><label>APP TITLE *</label><input type="text" id="sTitle" placeholder="e.g. My Amazing App"></div>
 <div class="form-group"><label>CATEGORY *</label>
@@ -165,7 +167,6 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 const OWNER = (typeof CONFIG !== "undefined" && CONFIG.GITHUB_OWNER) || "";
 const REPO = (typeof CONFIG !== "undefined" && CONFIG.GITHUB_REPO) || "";
 const API = "https://api.github.com/repos/" + OWNER + "/" + REPO;
-const RAW = "https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/main/data/links.json";
 
 const $ = (id) => document.getElementById(id);
 const toast = $("toast");
@@ -178,30 +179,53 @@ function showToast(msg, type) {
 }
 
 const sAction = $("sAction"), sAppId = $("sAppId"), appIdGroup = $("appIdGroup");
+const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const cleanId = (s) => String(s || "").trim().replace(/^[`'"]+|[`'"]+$/g, "").trim();
+async function fetchLiveApps() {
+  for (const br of ["main", "master"]) {
+    try {
+      const res = await fetch("https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + br + "/data/links.json?t=" + Date.now());
+      if (res.ok) {
+        const j = await res.json();
+        if (Array.isArray(j)) return j;
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+async function loadPickList() {
+  const sel = $("sPick");
+  sel.innerHTML = '<option value="">Reading live store…</option>';
+  const apps = await fetchLiveApps();
+  if (!apps || !apps.length) { sel.innerHTML = '<option value="">Store empty or unreachable</option>'; return; }
+  sel.innerHTML = '<option value="">Pick a live app…</option>' + apps.map((a) =>
+    '<option value="' + esc(a.id) + '">' + esc(a.title || "Untitled") + " — " + esc(a.category || "other") + " (" + esc(a.id) + ")</option>"
+  ).join("");
+}
+async function doLoad(rawId) {
+  const id = cleanId(rawId);
+  sAppId.value = id;
+  if (!id) { showToast("Enter an App ID first.", "error"); return; }
+  const apps = await fetchLiveApps();
+  if (!apps) { showToast("Could not load the store file.", "error"); return; }
+  const app = apps.find((a) => String(a.id || "").toLowerCase() === id.toLowerCase());
+  if (!app) { showToast("No live app with that ID. Pick from the list.", "error"); return; }
+  $("sTitle").value = app.title || "";
+  $("sCategory").value = { games: "Games", tools: "Tools", entertainment: "Entertainment", education: "Education", other: "Other" }[app.category] || "Other";
+  $("sDesc").value = app.description || "";
+  $("sUrl").value = app.url || "";
+  $("sAdUrl").value = app.adUrl || "";
+  $("sIcon").value = app.iconUrl || "";
+  $("sShots").value = (app.screenshots || []).join("\n");
+  showToast("Live values loaded.", "success");
+}
 sAction.addEventListener("change", () => {
   const need = sAction.value !== "new";
   appIdGroup.style.display = need ? "block" : "none";
+  if (need) loadPickList();
 });
-
-$("loadBtn").addEventListener("click", async () => {
-  const id = sAppId.value.trim();
-  if (!id) { showToast("Enter an App ID first.", "error"); return; }
-  try {
-    const res = await fetch(RAW + "?t=" + Date.now());
-    if (!res.ok) throw new Error("fetch");
-    const apps = await res.json();
-    const app = (Array.isArray(apps) ? apps : []).find((a) => a.id === id);
-    if (!app) { showToast("No live app with that ID.", "error"); return; }
-    $("sTitle").value = app.title || "";
-    $("sCategory").value = { games: "Games", tools: "Tools", entertainment: "Entertainment", education: "Education", other: "Other" }[app.category] || "Other";
-    $("sDesc").value = app.description || "";
-    $("sUrl").value = app.url || "";
-    $("sAdUrl").value = app.adUrl || "";
-    $("sIcon").value = app.iconUrl || "";
-    $("sShots").value = (app.screenshots || []).join("\n");
-    showToast("Live values loaded.", "success");
-  } catch { showToast("Could not load the store file.", "error"); }
-});
+$("loadBtn").addEventListener("click", () => doLoad(sAppId.value));
+$("sPick").addEventListener("change", (e) => { if (e.target.value) doLoad(e.target.value); });
 
 function filing() {
   return {
