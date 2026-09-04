@@ -27,9 +27,9 @@ A dual-website app store platform — a public **User Store** and a private **De
 - Responsive, works on low-end devices
 - Anti-copy protections (no right-click, no F12, anti-devtools)
 
-### Developer Portal (Open — No Password, No Repo Access)
+### Developer Portal (Open — No Password, No Repo Access, No GitHub Visits)
 - Anyone with a free GitHub account can file: new app, edit, or removal
-- Form opens a prefilled submission ticket (GitHub Issue) — one click to send
+- One-time token connect (fine-grained: this repo, Issues read+write) — then filings go straight from the portal, GitHub never opens
 - Track filings live: pending → queued → live, with fix requests
 - A GitHub Action validates, writes `data/links.json`, and stamps tickets published
 - Trusted publishers in `data/publishers.json` board automatically; others need one approval label

@@ -46,6 +46,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .id-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
 .submit-btn{padding:13px 30px;border-radius:11px;border:none;background:var(--pur);color:#fff;font-size:13px;font-weight:700;letter-spacing:.06em;cursor:pointer;font-family:'JetBrains Mono',monospace}
 .submit-btn:hover{background:var(--pur2)}
+.submit-btn:disabled{opacity:.55;cursor:wait}
 .ghost-btn{padding:13px 24px;border-radius:11px;border:1px solid var(--line);background:#1a1f2a;color:var(--mut);font-size:13px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono',monospace;white-space:nowrap}
 .ghost-btn:hover{color:#fff;border-color:var(--pur)}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
@@ -116,9 +117,26 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <p>Anyone with a free GitHub account can propose an app. Your filing opens as a submission ticket, the publisher robot checks it, and it boards the store — new apps, edits, and removals, all without repo access or shared passwords.</p>
 </div>
 
+<div class="panel" id="connect">
+<h2><i class="fas fa-plug"></i> Connect GitHub</h2>
+<div class="sub">ONE-TIME — THEN FILE WITHOUT EVER LEAVING THIS PAGE</div>
+<div id="connOff">
+<div class="form-group"><label>PERSONAL ACCESS TOKEN</label>
+<div class="id-row">
+<input type="password" id="tToken" placeholder="github_pat_…" autocomplete="off">
+<button type="button" class="ghost-btn" id="connBtn"><i class="fas fa-link"></i> CONNECT</button>
+</div>
+<div class="helper">Make one: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained → <b>this repo only</b> → Issues: read + write → set an expiry → Generate. <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener" style="color:var(--pur2)">Open the token page</a>. The token lives in YOUR browser only, revocable anytime.</div></div>
+</div>
+<div id="connOn" style="display:none">
+<p class="helper" style="font-size:13px">CONNECTED AS <b id="connUser" style="color:var(--tea)">@–</b> · filings go straight from here.</p>
+<div class="actions" style="margin-top:10px"><button class="ghost-btn" id="disconnBtn"><i class="fas fa-unlink"></i> DISCONNECT</button></div>
+</div>
+</div>
+
 <div class="panel" id="submit">
 <h2><i class="fas fa-paper-plane"></i> New Filing</h2>
-<div class="sub">STEP 1 — FILL · STEP 2 — OPEN TICKET · STEP 3 — SUBMIT ON GITHUB · <b id="formStatus">CHECKING FORMS…</b></div>
+<div class="sub">STEP 1 — FILL · STEP 2 — FILE FROM HERE · <b id="formStatus">CHECKING FORMS…</b></div>
 <div class="form-group"><label>REQUEST TYPE *</label>
 <select id="sAction">
 <option value="new">New app</option>
@@ -157,10 +175,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="helper" style="margin-bottom:12px">Live — exactly how the ticket will look on GitHub.</div>
 <div class="pv-doc" id="ticketPreview" aria-live="polite"></div>
 <div class="actions" style="margin-top:16px">
-<button class="submit-btn" id="openIssueBtn"><i class="fas fa-external-link-alt"></i> OPEN GITHUB TICKET</button>
+<button class="submit-btn" id="fileBtn"><i class="fas fa-paper-plane"></i> FILE FROM HERE</button>
+<button class="ghost-btn" id="openIssueBtn"><i class="fas fa-external-link-alt"></i> OPEN GITHUB INSTEAD</button>
 <button class="ghost-btn" id="copyBtn"><i class="fas fa-copy"></i> COPY DETAILS</button>
 </div>
-<div class="helper" style="margin-top:12px">Opens the matching form with everything filled — tick the confirmation box, press Submit new issue. COPY DETAILS is the fallback if anything ever arrives empty.</div>
+<div class="helper" style="margin-top:12px">FILE FROM HERE sends the ticket straight from this page (needs Connect above, one-time). The other two buttons are fallbacks.</div>
 </div>
 
 <div class="panel" id="track">
@@ -178,7 +197,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <h2><i class="fas fa-map"></i> How It Boards</h2>
 <div class="sub">REPO IS THE DATABASE · ROBOT IS THE PUBLISHER</div>
 <div class="steps">
-<li><i class="fas fa-check-circle"></i><b>1 — File.</b> Fill the form, open the ticket, press Submit on GitHub. needs only a free GitHub account — no repo access, no password.</li>
+<li><i class="fas fa-check-circle"></i><b>1 — Connect once.</b> Paste a token (this repo, Issues read+write). It stays in your browser. Then FILE FROM HERE sends tickets straight from this page — GitHub never opens.</li>
 <li><i class="fas fa-check-circle"></i><b>2 — Robot check.</b> The publisher robot reads your ticket within about 5 minutes. If a field is wrong, it writes the reason on your ticket as NEEDS FIX.</li>
 <li><i class="fas fa-check-circle"></i><b>3 — Live.</b> Good tickets board automatically — no approval taps needed. The ticket gets stamped PUBLISHED with your app ID, and the user store shows it a few minutes later.</li>
 <li><i class="fas fa-check-circle"></i><b>4 — Control.</b> Bad apps can be removed with a Delete filing. If spam ever appears, the owner can switch on approvals with one word in <b>data/publishers.json</b> ("auto" → "approve").</li>
@@ -416,6 +435,103 @@ renderPreview();
     el.style.color = "var(--amber)";
   }
 })();
+
+// ---- File straight from here: portal creates the ticket via the API ----
+const TKEY = "callanix_gh_token";
+const UKEY = "callanix_gh_user";
+const getToken = () => { try { return localStorage.getItem(TKEY) || ""; } catch { return ""; } };
+async function gh(path, method, body, token) {
+  const res = await fetch("https://api.github.com" + path, {
+    method: method || "GET",
+    headers: Object.assign({ Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" },
+      token ? { Authorization: "Bearer " + token } : {},
+      body ? { "Content-Type": "application/json" } : {}),
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  if (res.status === 401 || res.status === 403) throw new Error("denied");
+  if (!res.ok) throw new Error("gh" + res.status);
+  if (res.status === 204) return null;
+  return res.json();
+}
+async function refreshConn() {
+  const t = getToken();
+  if (!t) { $("connOn").style.display = "none"; $("connOff").style.display = "block"; return; }
+  try {
+    const me = await gh("/user", "GET", null, t);
+    try { localStorage.setItem(UKEY, me.login); } catch {}
+    $("connUser").textContent = "@" + me.login;
+    $("connOn").style.display = "block";
+    $("connOff").style.display = "none";
+    if (!$("tUser").value) $("tUser").value = me.login;
+  } catch {
+    try { localStorage.removeItem(TKEY); } catch {}
+    $("connOn").style.display = "none";
+    $("connOff").style.display = "block";
+    showToast("Saved token is invalid — connect again.", "error");
+  }
+}
+$("connBtn").addEventListener("click", async () => {
+  const t = $("tToken").value.trim();
+  if (!t) { showToast("Paste a token first.", "error"); return; }
+  try {
+    const me = await gh("/user", "GET", null, t);
+    try { localStorage.setItem(TKEY, t); localStorage.setItem(UKEY, me.login); } catch {}
+    $("tToken").value = "";
+    await refreshConn();
+    showToast("Connected as @" + me.login + ".", "success");
+  } catch { showToast("Token rejected — needs Issues read+write on this repo.", "error"); }
+});
+$("disconnBtn").addEventListener("click", () => {
+  try { localStorage.removeItem(TKEY); } catch {}
+  refreshConn();
+  showToast("Disconnected.", "info");
+});
+const URL_OK = (s) => /^https?:\/\/[^\s]+$/i.test(s || "");
+function validateFiling(f) {
+  if (f.action !== "new" && !cleanId(f.appId)) return "App ID is required — pick from the live list.";
+  if (f.action === "delete") return "";
+  if (!f.title.trim()) return "App title is required.";
+  if (!["games", "tools", "entertainment", "education", "other"].includes(f.category.trim().toLowerCase())) return "Pick a valid category.";
+  if (!f.desc.trim()) return "Description is required.";
+  if (!URL_OK(f.url)) return "App URL must start with http:// or https://.";
+  if (f.adUrl.trim() && !URL_OK(f.adUrl)) return "Ad URL looks wrong.";
+  if (f.icon.trim() && !URL_OK(f.icon)) return "Icon URL looks wrong.";
+  const shots = f.shots.split("\n").map((s) => s.trim()).filter(Boolean);
+  if (shots.length > 5) return "At most 5 screenshots.";
+  if (shots.some((s) => !URL_OK(s))) return "One screenshot line is not a URL.";
+  return "";
+}
+$("fileBtn").addEventListener("click", async () => {
+  const t = getToken();
+  if (!t) {
+    showToast("Connect GitHub first — one-time, at the top.", "error");
+    document.getElementById("connect").scrollIntoView({ behavior: "smooth" });
+    return;
+  }
+  const f = filing();
+  const err = validateFiling(f);
+  if (err) { showToast(err, "error"); return; }
+  const btn = $("fileBtn");
+  btn.disabled = true;
+  const old = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> FILING…';
+  try {
+    const labels = ["app-submission", f.action === "edit" ? "req-edit" : f.action === "delete" ? "req-delete" : "req-new"];
+    const issue = await gh("/repos/" + OWNER + "/" + REPO + "/issues", "POST", {
+      title: f.title || f.appId || "new submission",
+      body: ticketBody(f),
+      labels: labels,
+    }, t);
+    showToast("Filed as #" + issue.number + " — live in ~10 min.", "success");
+    try { $("tUser").value = localStorage.getItem(UKEY) || $("tUser").value; } catch {}
+    $("trackBtn").click();
+  } catch {
+    showToast("GitHub refused it — token needs Issues read+write on this repo.", "error");
+  }
+  btn.disabled = false;
+  btn.innerHTML = old;
+});
+refreshConn();
 </script>
 </body>
 </html>
