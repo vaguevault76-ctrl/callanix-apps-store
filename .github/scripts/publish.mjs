@@ -179,13 +179,7 @@ export function approvedFor({ labels, author, priv, mode }) {
   return mode !== "approve";
 }
 
-async function applyPhase() {
-  const apps = loadJson(LINKS, []);
-  const priv = privilegedUsers();
-  const mode = publishMode();
-  const issues = await api(
-    `/repos/${REPO}/issues?labels=app-submission&state=open&per_page=100`
-  );
+export function decideIssues(issues, apps, priv, mode) {
   const results = [];
   let changed = false;
   for (const issue of issues) {
@@ -199,8 +193,7 @@ async function applyPhase() {
       continue;
     }
     const sub = parseBody(issue.body);
-    const mode = sub.request;
-    const errors = validate(sub, apps, mode);
+    const errors = validate(sub, apps, sub.request);
     if (errors.length) {
       results.push({ issue: issue.number, action: "needs-fix", errors });
       continue;
@@ -213,6 +206,17 @@ async function applyPhase() {
     changed = true;
     results.push({ issue: issue.number, action: out.action, appId: out.appId, title: sub.title });
   }
+  return { results, changed };
+}
+
+async function applyPhase() {
+  const apps = loadJson(LINKS, []);
+  const priv = privilegedUsers();
+  const mode = publishMode();
+  const issues = await api(
+    `/repos/${REPO}/issues?labels=app-submission&state=open&per_page=100`
+  );
+  const { results, changed } = decideIssues(issues, apps, priv, mode);
   if (changed) writeFileSync(LINKS, JSON.stringify(apps, null, 2) + "\n");
   writeFileSync(RESULTS, JSON.stringify(results, null, 2));
   const out = process.env.GITHUB_OUTPUT;
@@ -339,6 +343,44 @@ function selftest() {
   assert.equal(approvedFor({ labels: new Set(), author: "stranger", priv, mode: "approve" }), false);
   assert.equal(approvedFor({ labels: new Set(["approved"]), author: "stranger", priv, mode: "approve" }), true);
   assert.equal(approvedFor({ labels: new Set(), author: "owner", priv, mode: "approve" }), true);
+
+  // full loop, as the Action runs it
+  const fake = (n, author, labels, text) => ({
+    number: n,
+    user: { login: author },
+    labels: labels.map((name) => ({ name })),
+    body: text,
+  });
+  let a2 = [];
+  let d = decideIssues([fake(7, "Stranger", [], body())], a2, new Set(["owner"]), "auto");
+  assert.equal(d.changed, true);
+  assert.equal(a2[0].id, "app-7");
+  assert.equal(d.results[0].action, "published");
+
+  let a3 = [];
+  d = decideIssues([fake(8, "Stranger", [], body())], a3, new Set(["owner"]), "approve");
+  assert.equal(d.changed, false);
+  assert.equal(d.results[0].action, "pending");
+
+  d = decideIssues([fake(9, "Stranger", ["approved"], body())], [], new Set(["owner"]), "approve");
+  assert.equal(d.results[0].action, "published");
+
+  d = decideIssues(
+    [fake(10, "Stranger", [], body({ url: "bad", confirm: false }))],
+    [],
+    new Set(["owner"]),
+    "auto"
+  );
+  assert.equal(d.changed, false);
+  assert.equal(d.results[0].action, "needs-fix");
+
+  d = decideIssues(
+    [fake(11, "Stranger", ["app-submission", "published"], body())],
+    [],
+    new Set(["owner"]),
+    "auto"
+  );
+  assert.equal(d.results.length, 0);
 
   console.log("selftest: all fixtures passed");
 }
