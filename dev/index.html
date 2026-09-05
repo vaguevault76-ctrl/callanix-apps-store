@@ -62,6 +62,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .mini-btn{padding:8px 15px;border-radius:8px;border:1px solid var(--line);background:#1a1f2a;color:var(--mut);font-size:11px;font-weight:700;letter-spacing:.05em;cursor:pointer;font-family:'JetBrains Mono',monospace}
 .mini-btn:hover{color:#fff;border-color:var(--pur)}
 .mini-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.mini-steps{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.mini-steps li{font-size:13px;color:var(--mut);background:#0b0d12;border:1px solid var(--line);border-radius:10px;padding:10px 14px;line-height:1.6;list-style:none}
+.mini-steps li b{color:var(--paper)}
+.mini-steps a{color:var(--pur2)}
 .area-count{color:var(--tea)}
 .msg-body{font-size:12.5px;color:var(--mut);line-height:1.65;white-space:pre-wrap;word-break:break-word}
 .msg-body a{color:var(--pur2)}
@@ -133,14 +137,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 
 <div class="panel" id="connect">
 <h2><i class="fas fa-plug"></i> Connect GitHub</h2>
-<div class="sub">ONE-TIME — THEN FILE WITHOUT EVER LEAVING THIS PAGE</div>
+<div class="sub">ONE-TIME · 1 MINUTE · CLASSIC KEY ONLY</div>
 <div id="connOff">
-<div class="form-group"><label>PERSONAL ACCESS TOKEN</label>
+<ol class="mini-steps">
+<li><b>1.</b> Open the <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">token page</a> → <b>Generate new token (classic)</b></li>
+<li><b>2.</b> Name it anything, set an expiry, tick ONLY <b>public_repo</b> → Generate token</li>
+<li><b>3.</b> Copy the <b>ghp_…</b> string → paste below → CONNECT. It never leaves your browser.</li>
+</ol>
+<div class="form-group"><label>CLASSIC TOKEN (STARTS WITH GHP_)</label>
 <div class="id-row">
-<input type="password" id="tToken" placeholder="github_pat_…" autocomplete="off">
+<input type="password" id="tToken" placeholder="ghp_…" autocomplete="off">
 <button type="button" class="ghost-btn" id="connBtn"><i class="fas fa-link"></i> CONNECT</button>
-</div>
-<div class="helper">Easy way: GitHub → Settings → Developer settings → Personal access tokens → <b>Tokens (classic)</b> → Generate → tick <b>public_repo</b> → Generate. <a href="https://github.com/settings/tokens" target="_blank" rel="noopener" style="color:var(--pur2)">Open the token page</a>. The token lives in YOUR browser only, revocable anytime. Careful way: fine-grained token → All repositories → Issues read+write.</div></div>
+</div></div>
 </div>
 <div id="connOn" style="display:none">
 <p class="helper" style="font-size:13px">CONNECTED AS <b id="connUser" style="color:var(--tea)">@–</b> · filings go straight from here.</p>
@@ -217,7 +225,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <h2><i class="fas fa-map"></i> How It Boards</h2>
 <div class="sub">REPO IS THE DATABASE · ROBOT IS THE PUBLISHER</div>
 <div class="steps">
-<li><i class="fas fa-check-circle"></i><b>1 — Connect once.</b> Paste a classic token with <b>public_repo</b> ticked (or fine-grained with Issues read+write). It stays in your browser. Then FILE FROM HERE sends tickets straight from this page — GitHub never opens.</li>
+<li><i class="fas fa-check-circle"></i><b>1 — Connect once.</b> Classic token, <b>public_repo</b> ticked, paste it above. It stays in your browser. Then FILE FROM HERE sends tickets straight from this page — GitHub never opens.</li>
 <li><i class="fas fa-check-circle"></i><b>2 — Robot check.</b> The publisher robot reads your ticket within about 5 minutes. Its reply (app ID, or what to fix) appears right under your filing in TRACK — no need to open GitHub.</li>
 <li><i class="fas fa-check-circle"></i><b>3 — Live.</b> Good tickets board automatically — no approval taps needed. The ticket gets stamped PUBLISHED with your app ID, and the user store shows it a few minutes later.</li>
 <li><i class="fas fa-check-circle"></i><b>4 — Control.</b> Bad apps can be removed with a Delete filing. If spam ever appears, the owner can switch on approvals with one word in <b>data/publishers.json</b> ("auto" → "approve").</li>
@@ -632,36 +640,32 @@ function resetFiling() {
 $("connBtn").addEventListener("click", async () => {
   const t = $("tToken").value.trim();
   if (!t) { showToast("Paste a token first.", "error"); return; }
-  if (!/^(github_pat_|ghp_)/.test(t)) { showToast("That doesn't look like a token — copy the full string starting with github_pat_.", "error"); return; }
+  if (t.indexOf("github_pat_") === 0) { showToast("Fine-grained keys don't fit here — remake as Tokens (classic) + public_repo (3 taps above).", "error"); return; }
+  if (t.indexOf("ghp_") !== 0) { showToast("Paste a classic token — it starts with ghp_.", "error"); return; }
+  let me = null;
   try {
-    // Read the key's own scopes straight from GitHub's answer headers.
     const probe = await fetch("https://api.github.com/user", { headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + t } });
-    if (probe.status === 401) { const e = new Error("gh401"); e.status = 401; throw e; }
-    if (!probe.ok) { const e = new Error("gh" + probe.status); e.status = probe.status; throw e; }
+    if (probe.status === 401) { showToast("GitHub says: wrong or expired key. Generate a fresh one.", "error"); return; }
+    if (!probe.ok) { showToast("Couldn't reach GitHub — check internet, retry.", "error"); return; }
     const scopes = probe.headers.get("x-oauth-scopes") || "";
-    if (scopes && !/(^|,\s*)(repo|public_repo)\b/.test(scopes)) {
-      showToast("Classic token is missing the public_repo tick — remake with public_repo checked.", "error");
-      return;
-    }
-    const me = await probe.json();
-    let prev = "";
-    try { prev = localStorage.getItem(UKEY) || ""; } catch {}
-    try { localStorage.setItem(TKEY, t); localStorage.setItem(UKEY, me.login); } catch {}
-    $("tToken").value = "";
-    await refreshConn();
-    if (prev && prev.toLowerCase() !== String(me.login).toLowerCase()) resetFiling();
-    $("tUser").value = me.login;
-    loadMyApps();
-    $("trackBtn").click();
-    showToast("Connected as @" + me.login + " — showing their filings.", "success");
+    if (!/(^|,\s*)(repo|public_repo)\b/.test(scopes)) { showToast("Key is missing the public_repo tick — remake with public_repo checked (step 2).", "error"); return; }
+    me = await probe.json();
+    if (!me || !me.login) throw new Error("empty");
   } catch (err) {
-    const s = (err && err.status) || 0;
-    const d = String((err && err.message) || "").toLowerCase();
-    if (s === 401) showToast("GitHub says: wrong or expired token. Generate a fresh one.", "error");
-    else if (s === 403 && d.includes("rate")) showToast("GitHub rate limit — wait a few minutes, retry.", "error");
-    else if (s === 403) showToast("Token blocked — expired or revoked. Make a new one.", "error");
-    else showToast("Couldn't reach GitHub — check internet, then retry.", "error");
+    if (err && err.message === "empty") showToast("GitHub answered oddly — retry once.", "error");
+    else showToast("Couldn't reach GitHub — check internet, retry.", "error");
+    return;
   }
+  let prev = "";
+  try { prev = localStorage.getItem(UKEY) || ""; } catch {}
+  try { localStorage.setItem(TKEY, t); localStorage.setItem(UKEY, me.login); } catch {}
+  $("tToken").value = "";
+  await refreshConn();
+  if (prev && prev.toLowerCase() !== String(me.login).toLowerCase()) resetFiling();
+  $("tUser").value = me.login;
+  loadMyApps();
+  $("trackBtn").click();
+  showToast("Connected as @" + me.login + " — key verified, filings unlocked.", "success");
 });
 $("disconnBtn").addEventListener("click", () => {
   try { localStorage.removeItem(TKEY); localStorage.removeItem(UKEY); } catch {}
@@ -719,7 +723,7 @@ $("fileBtn").addEventListener("click", async () => {
     const after = d.includes(":") ? d.split(":").slice(1).join(":").trim().slice(0, 160) : "";
     let msg = "GitHub refused it.";
     if (s === 401) msg = "Token invalid or expired — make a fresh token and connect again.";
-    else if (s === 403) msg = "Token lacks access" + (after ? " — GitHub says: " + after : " — classic needs public_repo ticked; fine-grained needs Issues read+write.");
+    else if (s === 403) msg = "Key lost access" + (after ? " — GitHub says: " + after : " — reconnect with a fresh classic key (public_repo ticked).");
     else if (s === 404) msg = "Repo not found — tell the owner the portal config is wrong.";
     else if (after) msg = "GitHub said: " + after;
     showToast(msg, "error");
