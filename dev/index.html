@@ -525,19 +525,42 @@ async function refreshConn() {
     showToast("Saved token is invalid — connect again.", "error");
   }
 }
+function resetFiling() {
+  sAction.value = "new";
+  appIdGroup.style.display = "none";
+  sAppId.value = "";
+  $("sTitle").value = "";
+  $("sCategory").value = "Other";
+  $("sDesc").value = "";
+  $("sUrl").value = "";
+  $("sAdUrl").value = "";
+  $("sIcon").value = "";
+  $("sShots").value = "";
+  const sp = $("sPick");
+  if (sp) sp.innerHTML = '<option value="">Switch to Edit/Delete to load…</option>';
+  try { renderPreview(); } catch {}
+}
 $("connBtn").addEventListener("click", async () => {
   const t = $("tToken").value.trim();
   if (!t) { showToast("Paste a token first.", "error"); return; }
   try {
     const me = await gh("/user", "GET", null, t);
+    let prev = "";
+    try { prev = localStorage.getItem(UKEY) || ""; } catch {}
     try { localStorage.setItem(TKEY, t); localStorage.setItem(UKEY, me.login); } catch {}
     $("tToken").value = "";
     await refreshConn();
-    showToast("Connected as @" + me.login + ".", "success");
+    if (prev && prev.toLowerCase() !== String(me.login).toLowerCase()) resetFiling();
+    $("tUser").value = me.login;
+    $("trackBtn").click();
+    showToast("Connected as @" + me.login + " — showing their filings.", "success");
   } catch { showToast("Token rejected — needs Issues read+write on this repo.", "error"); }
 });
 $("disconnBtn").addEventListener("click", () => {
-  try { localStorage.removeItem(TKEY); } catch {}
+  try { localStorage.removeItem(TKEY); localStorage.removeItem(UKEY); } catch {}
+  resetFiling();
+  $("tUser").value = "";
+  $("tList").innerHTML = '<p class="helper">No lookup yet. Filings appear here with live status chips.</p>';
   refreshConn();
   showToast("Disconnected.", "info");
 });
@@ -586,7 +609,7 @@ $("fileBtn").addEventListener("click", async () => {
   btn.disabled = false;
   btn.innerHTML = old;
 });
-refreshConn();
+refreshConn().then(() => { if ($("tUser").value) $("trackBtn").click(); });
 </script>
 </body>
 </html>
