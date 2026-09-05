@@ -12,6 +12,7 @@ const ROOT = join(DIR, "..", "..");
 const LINKS = join(ROOT, "data", "links.json");
 const PUBLISHERS = join(ROOT, "data", "publishers.json");
 const RESULTS = join(DIR, ".results.json");
+const REPORT = join(DIR, ".report.json");
 const MAILQ = join(DIR, ".mail.json");
 
 const CATEGORIES = new Set(["games", "tools", "entertainment", "education", "other"]);
@@ -99,7 +100,7 @@ export function parseBody(raw) {
 }
 
 // ---------- validation ----------
-const isUrl = (s) => /^https?:\/\/[^\s]+$/i.test(s || "");
+const isUrl = (s) => /^https?:\/\/[^\s"<>]+$/i.test(s || "");
 
 export function validate(sub, apps, mode) {
   const errors = [];
@@ -278,18 +279,25 @@ async function applyPhase() {
   } catch {}
   const { results, changed } = decideIssues(issues, apps, priv, mode);
   if (changed) writeFileSync(LINKS, JSON.stringify(apps, null, 2) + "\n");
-  writeFileSync(RESULTS, JSON.stringify(results, null, 2));
+  // REPORT carries contact emails for the report phase; RESULTS is the
+  // public-safe copy that the workflow prints into the action log.
+  writeFileSync(REPORT, JSON.stringify(results, null, 2));
+  writeFileSync(
+    RESULTS,
+    JSON.stringify(results.map(({ contactEmail, ...rest }) => rest), null, 2)
+  );
   const out = process.env.GITHUB_OUTPUT;
   if (out) appendFileSync(out, `changed=${changed}\n`);
   console.log(`apply: ${results.length} issue(s), changed=${changed}`);
 }
 
 async function reportPhase() {
-  if (!existsSync(RESULTS)) {
+  const path = existsSync(REPORT) ? REPORT : RESULTS;
+  if (!existsSync(path)) {
     console.log("report: no results file, nothing to do");
     return;
   }
-  const results = loadJson(RESULTS, []);
+  const results = loadJson(path, []);
   const mail = [];
   const repoUrl = `https://github.com/${REPO}`;
   for (const r of results) {
@@ -307,9 +315,10 @@ async function reportPhase() {
     }
     const emailed = Boolean(r.contactEmail) && r.action !== "deleted";
     if (emailed) {
+      const safeTitle = String(r.title || "your app").replace(/[\r\n]+/g, " ");
       mail.push({
         to: r.contactEmail,
-        subject: `Your Callanix app ${r.action === "published" ? "is live" : "was updated"}: ${r.title || "your app"}`,
+        subject: `Your Callanix app ${r.action === "published" ? "is live" : "was updated"}: ${safeTitle}`,
         body: [
           "Hi,",
           "",

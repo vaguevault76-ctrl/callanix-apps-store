@@ -203,7 +203,7 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
 if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','C','J'].includes(e.key)) || (e.ctrlKey && ['u','s'].includes(e.key))) e.preventDefault();
 });
-(function(){const d=new Image();Object.defineProperty(d,'id',{get:function(){document.body.innerHTML='<div style="text-align:center;padding:100px 20px;color:#fff;"><h1>Access Denied</h1><p>Developer tools detected.</p></div>';}});console.log('%c',d);})();
+
 let apps = [];
 let currentApp = null;
 let filteredApps = [];
@@ -236,6 +236,9 @@ const lbPrev = document.getElementById('lbPrev');
 const lbNext = document.getElementById('lbNext');
 let lbList = [];
 let lbIndex = 0;
+const escH = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const safeUrl = (u) => { const s = String(u || "").trim(); return /^https?:\/\/[^\s"<>]+$/i.test(s) ? s : ""; };
+const openOut = (u) => { if (safeUrl(u)) window.open(safeUrl(u), "_blank", "noopener,noreferrer"); };
 const DATA_URLS = [
 '../data/links.json',
 'https://raw.githubusercontent.com/vaguevault76-ctrl/callanix-apps-store/main/data/links.json'
@@ -298,28 +301,32 @@ if (filteredApps.length === 0) { emptyState.classList.add('show');if(searchInput
 emptyState.classList.remove('show');navCount.textContent = filteredApps.length;if(liveCount)liveCount.textContent = filteredApps.length+' ON BOARD';
 filteredApps.forEach((app, i) => {
 const card = document.createElement('div');card.className = 'app-card';card.style.animationDelay = (Math.min(i,12) * 0.05) + 's';
-const shots = (app.screenshots && app.screenshots.length) ? '<div class="card-shots">'+app.screenshots.slice(0,3).map((s,si) => '<img src="'+s+'" alt="Screenshot '+(si+1)+'" loading="lazy" data-full="'+si+'" onerror="this.style.display=\'none\'">').join('')+'</div>' : '';
+const dev = String(app.submittedBy || 'callanix').replace(/[^a-z0-9-]/gi, '').toUpperCase() || 'CALLANIX';
+const icon = safeUrl(app.iconUrl) || 'https://via.placeholder.com/52/6c5ce7/ffffff?text=A';
+const shotUrls = Array.isArray(app.screenshots) ? app.screenshots.map(safeUrl).filter(Boolean).slice(0,3) : [];
+const shots = shotUrls.length ? '<div class="card-shots">'+shotUrls.map((s,si) => '<img src="'+s+'" alt="Screenshot '+(si+1)+'" loading="lazy" data-full="'+si+'" onerror="this.style.display=\'none\'">').join('')+'</div>' : '';
 card.innerHTML =
-'<div class="card-top"><img class="card-icon" src="'+(app.iconUrl||'https://via.placeholder.com/52/6c5ce7/ffffff?text=A')+'" alt="" loading="lazy" onerror="this.src=\'https://via.placeholder.com/52/6c5ce7/ffffff?text=?\'">'+
-'<div><div class="card-code">FLAP ' + String(i+1).padStart(2,'0') + ' · U·HALL</div><div class="card-title">'+(app.title||'Untitled').toUpperCase()+'</div><div class="card-category">'+(app.category||'other').toUpperCase()+'</div><div class="card-dev">BY <b>@'+String(app.submittedBy||'callanix').replace(/[^a-z0-9-]/gi,'').toUpperCase()+'</b></div></div></div>'+
-'<div class="card-desc">'+(app.description||'No description available.')+'</div>'+shots+
+'<div class="card-top"><img class="card-icon" src="'+icon+'" alt="" loading="lazy" onerror="this.src=\'https://via.placeholder.com/52/6c5ce7/ffffff?text=?\'">'+
+'<div><div class="card-code">FLAP ' + String(i+1).padStart(2,'0') + ' · U·HALL</div><div class="card-title">'+escH(app.title||'Untitled').toUpperCase()+'</div><div class="card-category">'+escH(app.category||'other').toUpperCase()+'</div><div class="card-dev">BY <b>@'+dev+'</b></div></div></div>'+
+'<div class="card-desc">'+escH(app.description||'No description available.')+'</div>'+shots+
 '<div class="card-footer"><span class="card-time">'+(app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'NO DATE')+' · <span class="status-pill">ON TIME</span></span><button class="card-btn">OPEN</button></div>';
 card.querySelector('.card-btn').addEventListener('click', (e) => { e.stopPropagation();openModal(app); });
-card.querySelectorAll('.card-shots img').forEach(img => { img.addEventListener('click', (e) => { e.stopPropagation();openLightbox(app.screenshots, parseInt(img.dataset.full||'0',10)); }); });
+card.querySelectorAll('.card-shots img').forEach(img => { img.addEventListener('click', (e) => { e.stopPropagation();openLightbox(shotUrls, parseInt(img.dataset.full||'0',10)); }); });
 card.addEventListener('click', () => openModal(app));grid.appendChild(card);
 });
 }
 function openModal(app) {
 currentApp = app;
-modalIcon.src = app.iconUrl || 'https://via.placeholder.com/64/6c5ce7/ffffff?text=A';
+modalIcon.src = safeUrl(app.iconUrl) || 'https://via.placeholder.com/64/6c5ce7/ffffff?text=A';
 modalIcon.onerror = function(){ this.src='https://via.placeholder.com/64/6c5ce7/ffffff?text=?'; };
 modalTitle.textContent = (app.title || 'Untitled').toUpperCase();
 modalCategory.textContent = (app.category||'other').toUpperCase();
 document.getElementById('modalDev').textContent = '@' + String(app.submittedBy || 'callanix').replace(/[^a-z0-9-]/gi, '').toLowerCase();
 modalDesc.textContent = app.description || 'No description available.';
 modalScreenshots.innerHTML = '';
-if (app.screenshots && app.screenshots.length) {
-app.screenshots.forEach((s, si) => { const img = document.createElement('img');img.src = s;img.loading = 'lazy';img.alt = 'Screenshot '+(si+1);img.onerror = function(){ this.style.display='none'; };img.addEventListener('click', () => openLightbox(app.screenshots, si));modalScreenshots.appendChild(img); });
+const modalShots = Array.isArray(app.screenshots) ? app.screenshots.map(safeUrl).filter(Boolean).slice(0,20) : [];
+if (modalShots.length) {
+modalShots.forEach((s, si) => { const img = document.createElement('img');img.src = s;img.loading = 'lazy';img.alt = 'Screenshot '+(si+1);img.onerror = function(){ this.style.display='none'; };img.addEventListener('click', () => openLightbox(modalShots, si));modalScreenshots.appendChild(img); });
 } else { modalScreenshots.innerHTML = '<p style="color:var(--dim);font-size:13px;">No screenshots on this slip.</p>'; }
 modalOverlay.classList.add('show');document.body.style.overflow = 'hidden';
 }
@@ -353,7 +360,7 @@ if(e.key==='Escape'){modalOverlay.classList.remove('show');adModal.classList.rem
 modalBtn.addEventListener('click', () => {
 modalOverlay.classList.remove('show');document.body.style.overflow = '';
 if (!currentApp) return;
-if (currentApp.adUrl) { showAdGateway(currentApp); } else { window.open(currentApp.url, '_blank'); }
+if (currentApp.adUrl) { showAdGateway(currentApp); } else { openOut(currentApp.url); }
 });
 function showAdGateway(app) {
 adModal.classList.add('show');
@@ -361,9 +368,9 @@ let count = 5;adTimer.textContent = count;adProgress.style.width = '0%';adContin
 const interval = setInterval(() => {
 count--;adTimer.textContent = count;adProgress.style.width = ((5 - count) / 5 * 100) + '%';
 if (count <= 0) { clearInterval(interval);adTimer.textContent = '0';adProgress.style.width = '100%';adContinue.classList.add('show'); }
-}, 1000);
-window.open(app.adUrl, '_blank');
-adContinue.onclick = () => { adModal.classList.remove('show');if (app.url) window.open(app.url, '_blank'); };
+    }, 1000);
+    openOut(app.adUrl);
+    adContinue.onclick = () => { adModal.classList.remove('show');if (app.url) openOut(app.url); };
 }
 ['contextmenu','selectstart','copy','cut','dragstart'].forEach(e => document.addEventListener(e, e => e.preventDefault()));
 fetchApps();

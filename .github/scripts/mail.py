@@ -38,24 +38,29 @@ def main():
     sent = 0
     ctx = ssl.create_default_context()
     for m in queue:
-        to = (m.get("to") or "").strip()
-        if "@" not in to:
+        try:
+            to = (m.get("to") or "").strip().replace("\n", "").replace("\r", "")
+            if "@" not in to:
+                continue
+            subject = (m.get("subject") or "Callanix Store").replace("\n", " ").replace("\r", " ")
+            msg = EmailMessage()
+            msg["From"] = sender
+            msg["To"] = to
+            msg["Subject"] = subject
+            msg.set_content(m.get("body") or "")
+            if port == 465:
+                with smtplib.SMTP_SSL(host, port, context=ctx) as s:
+                    s.login(user, pw)
+                    s.send_message(msg)
+            else:
+                with smtplib.SMTP(host, port) as s:
+                    s.starttls(context=ctx)
+                    s.login(user, pw)
+                    s.send_message(msg)
+            sent += 1
+        except Exception as e:
+            print(f"mail: skipped one ({type(e).__name__})")
             continue
-        msg = EmailMessage()
-        msg["From"] = sender
-        msg["To"] = to
-        msg["Subject"] = m.get("subject") or "Callanix Store"
-        msg.set_content(m.get("body") or "")
-        if port == 465:
-            with smtplib.SMTP_SSL(host, port, context=ctx) as s:
-                s.login(user, pw)
-                s.send_message(msg)
-        else:
-            with smtplib.SMTP(host, port) as s:
-                s.starttls(context=ctx)
-                s.login(user, pw)
-                s.send_message(msg)
-        sent += 1
     print(f"mail: sent {sent}/{len(queue)}")
     return 0
 

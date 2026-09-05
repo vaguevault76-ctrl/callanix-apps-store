@@ -450,7 +450,7 @@ $("openIssueBtn").addEventListener("click", () => {
   const f = filing();
   if (f.action !== "new" && !f.appId) { showToast("App ID is required for edits and removals.", "error"); return; }
   if (f.action === "new" && (!f.title || !f.url)) { showToast("Title and App URL are required.", "error"); return; }
-  window.open(issueUrl(f), "_blank");
+  window.open(issueUrl(f), "_blank", "noopener");
   showToast("Ticket opened — press Submit on GitHub.", "info");
 });
 
@@ -490,7 +490,7 @@ $("trackBtn").addEventListener("click", async () => {
     if (!res.ok) throw new Error("api");
     const issues = await res.json();
     const mine = issues.filter((i) => (i.user?.login || "").toLowerCase() === user && !i.pull_request);
-    if (!mine.length) { list.innerHTML = '<p class="helper">No filings from @' + user + " yet.</p>"; return; }
+    if (!mine.length) { list.innerHTML = '<p class="helper">No filings from @' + esc(user) + " yet.</p>"; return; }
     const ago = (ts) => {
       const s = Math.max(1, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
       if (s < 60) return "just now";
@@ -558,14 +558,15 @@ function renderPreview() {
   const dim = (t) => '<span class="pv-dim">' + t + "</span>";
   const warn = (t) => '<span class="pv-warn">' + t + "</span>";
   const row = (h, v) => '<div class="pv-sec"><div class="pv-h">' + h + "</div><div class=\"pv-v\">" + v + "</div></div>";
-  const optLink = (label, v) => v ? '<a href="' + esc(v) + '" target="_blank" rel="noopener">' + label + "</a> · " + dim(esc(v)) : dim("—");
+  const linkOk = (v) => /^https?:\/\/[^\s"<>]+$/i.test(String(v || ""));
+  const optLink = (label, v) => !v ? dim("—") : !linkOk(v) ? warn("Must start with http(s)://") : '<a href="' + esc(v) + '" target="_blank" rel="noopener">' + label + "</a> · " + dim(esc(v));
   const shots = f.shots.split("\n").map((s) => s.trim()).filter(Boolean);
   let h = row("Request type", "<b>" + req + "</b>");
   if (f.action !== "new") h += row("App ID", f.appId ? "<code>" + esc(f.appId) + "</code>" : warn("App ID required — pick from the live list"));
   h += row("App title", f.title ? "<b>" + esc(f.title) + "</b>" : (f.action === "delete" ? dim("—") : warn("Title required")));
   h += row("Category", "<code>" + esc(f.category) + "</code>");
   h += row("Description", f.desc ? "<div class=\"pv-quote\">" + esc(f.desc).replace(/\n/g, "<br>") + "</div>" : (f.action === "delete" ? dim("—") : warn("Description required")));
-  h += row("App URL", f.url ? '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">Open the app</a>' : (f.action === "delete" ? dim("—") : warn("App URL required")));
+  h += row("App URL", !f.url ? (f.action === "delete" ? dim("—") : warn("App URL required")) : !linkOk(f.url) ? warn("Must start with http(s)://") : '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">Open the app</a>');
   if (f.action !== "delete") {
     h += row("Ad gateway URL", optLink("Open the ad", f.adUrl));
     h += row("Icon URL", optLink("View the icon", f.icon));
@@ -687,7 +688,7 @@ $("connBtn").addEventListener("click", async () => {
   $("tUser").value = me.login;
   loadMyApps();
   $("trackBtn").click();
-  showToast("Connected as @" + me.login + " — key verified, filings unlocked.", "success");
+  showToast("Connected as @" + esc(me.login) + " — key verified, filings unlocked.", "success");
 });
 $("disconnBtn").addEventListener("click", () => {
   try { localStorage.removeItem(TKEY); localStorage.removeItem(UKEY); } catch {}
@@ -699,7 +700,7 @@ $("disconnBtn").addEventListener("click", () => {
   refreshConn();
   showToast("Disconnected.", "info");
 });
-const URL_OK = (s) => /^https?:\/\/[^\s]+$/i.test(s || "");
+const URL_OK = (s) => /^https?:\/\/[^\s"<>]+$/i.test(s || "");
 function validateFiling(f) {
   if (f.action !== "new" && !cleanId(f.appId)) return "App ID is required — pick from the live list.";
   if (f.action === "delete") return "";
