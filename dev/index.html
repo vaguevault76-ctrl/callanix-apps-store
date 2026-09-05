@@ -580,8 +580,16 @@ async function gh(path, method, body, token) {
       body ? { "Content-Type": "application/json" } : {}),
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  if (res.status === 401 || res.status === 403) throw new Error("denied");
-  if (!res.ok) throw new Error("gh" + res.status);
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const j = await res.clone().json();
+      detail = ((j && j.errors) || []).map((e) => e.message || e.code).filter(Boolean).join("; ") || (j && j.message) || "";
+    } catch {}
+    const err = new Error("gh" + res.status + (detail ? ": " + detail : ""));
+    err.status = res.status;
+    throw err;
+  }
   if (res.status === 204) return null;
   return res.json();
 }
@@ -674,18 +682,26 @@ $("fileBtn").addEventListener("click", async () => {
   const old = btn.innerHTML;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> FILING…';
   try {
-    const labels = ["app-submission", f.action === "edit" ? "req-edit" : f.action === "delete" ? "req-delete" : "req-new"];
+    // No labels sent: unknown label names make GitHub reject the whole
+    // ticket, and the robot recognizes our filings by their marker anyway.
     const issue = await gh("/repos/" + OWNER + "/" + REPO + "/issues", "POST", {
       title: f.title || f.appId || "new submission",
       body: ticketBody(f),
-      labels: labels,
     }, t);
     showToast("Filed as #" + issue.number + " — live in ~10 min.", "success");
     try { $("tUser").value = localStorage.getItem(UKEY) || $("tUser").value; } catch {}
     loadMyApps();
     $("trackBtn").click();
-  } catch {
-    showToast("GitHub refused it — token needs Issues read+write on this repo.", "error");
+  } catch (err) {
+    const s = (err && err.status) || 0;
+    const d = String((err && err.message) || "");
+    const after = d.includes(":") ? d.split(":").slice(1).join(":").trim().slice(0, 160) : "";
+    let msg = "GitHub refused it.";
+    if (s === 401) msg = "Token invalid or expired — make a fresh token and connect again.";
+    else if (s === 403) msg = "Token lacks access — remake it with Issues read+write on THIS repo.";
+    else if (s === 404) msg = "Repo not found — tell the owner the portal config is wrong.";
+    else if (after) msg = "GitHub said: " + after;
+    showToast(msg, "error");
   }
   btn.disabled = false;
   btn.innerHTML = old;
