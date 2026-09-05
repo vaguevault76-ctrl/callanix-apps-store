@@ -158,8 +158,14 @@ export function applySubmission(sub, apps, issueNumber, author, privileged) {
     });
     return { ok: true, appId: app.id, action: "updated" };
   }
-  let id = `app-${issueNumber}`;
-  for (let n = 2; apps.some((a) => a.id === id); n++) id = `app-${issueNumber}-${n}`;
+  // Unguessable per-app IDs: random, never sequential, so one dev cannot
+  // walk into another dev's apps by trying app-1, app-2, ...
+  let id = "";
+  for (let n = 0; n < 50 && !id; n++) {
+    const cand = "app-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    if (!apps.some((a) => a.id === cand)) id = cand;
+  }
+  if (!id) id = "app-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
   apps.push({
     id,
     title: sub.title,
@@ -370,18 +376,19 @@ function selftest() {
   const apps = [];
   const r1 = applySubmission(sub, apps, 42, "SomeDev", false);
   assert.equal(r1.ok, true);
-  assert.equal(apps[0].id, "app-42");
+  assert.ok(/^app-[a-z0-9]+$/.test(apps[0].id));
   assert.equal(apps[0].submittedBy, "somedev");
 
   // edit by owner ok, by stranger rejected
-  const esub = parseBody(body({ request: "Edit app", appId: "app-42", title: "Renamed" }));
+  const madeId = apps[0].id;
+  const esub = parseBody(body({ request: "Edit app", appId: madeId, title: "Renamed" }));
   assert.deepEqual(validate(esub, apps, "edit"), []);
   assert.equal(applySubmission(esub, apps, 43, "SomeDev", false).ok, true);
   assert.equal(apps[0].title, "Renamed");
   assert.equal(applySubmission(esub, apps, 43, "Stranger", false).ok, false);
 
   // delete by stranger rejected, by privileged ok
-  const dsub = parseBody(body({ request: "Delete app", appId: "app-42", title: "x", desc: "x" }));
+  const dsub = parseBody(body({ request: "Delete app", appId: madeId, title: "x", desc: "x" }));
   assert.equal(applySubmission(dsub, apps, 44, "Stranger", false).ok, false);
   assert.equal(applySubmission(dsub, apps, 44, "anyone", true).action, "deleted");
   assert.equal(apps.length, 0);
@@ -403,7 +410,7 @@ function selftest() {
   let a2 = [];
   let d = decideIssues([fake(7, "Stranger", [], body())], a2, new Set(["owner"]), "auto");
   assert.equal(d.changed, true);
-  assert.equal(a2[0].id, "app-7");
+  assert.ok(/^app-[a-z0-9]+$/.test(a2[0].id));
   assert.equal(d.results[0].action, "published");
 
   let a3 = [];
@@ -481,7 +488,7 @@ function selftest() {
   let a5 = [];
   d = decideIssues([{ number: 15, user: { login: "stranger" }, labels: [], body: portalBody }], a5, new Set(["owner"]), "auto");
   assert.equal(d.results[0].action, "published");
-  assert.equal(a5[0].id, "app-15");
+  assert.ok(/^app-[a-z0-9]+$/.test(a5[0].id));
 
   // form-style tickets carry no Request-type section; labels decide
   const formBody = portalBody

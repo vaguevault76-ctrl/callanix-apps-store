@@ -275,14 +275,28 @@ async function fetchPublishers() {
   return { mode: "auto", autoApprove: [] };
 }
 function connLogin() { try { return localStorage.getItem(UKEY) || ""; } catch { return ""; } }
+async function amManager(login) {
+  if (!login) return false;
+  const low = String(login).toLowerCase();
+  if (low === String(OWNER).toLowerCase()) return true;
+  const pub = await fetchPublishers();
+  return (pub.autoApprove || []).map((u) => String(u).toLowerCase()).includes(low);
+}
 async function myScope() {
   const login = connLogin();
   if (!login) return { login: "", mgr: false, ok: false };
-  const pub = await fetchPublishers();
-  const low = login.toLowerCase();
-  const mgr = low === String(OWNER).toLowerCase() ||
-    (pub.autoApprove || []).map((u) => String(u).toLowerCase()).includes(low);
-  return { login, mgr, ok: true };
+  return { login, mgr: await amManager(login), ok: true };
+}
+// Portal-side ownership wall (the robot enforces the same rule again).
+async function ownershipOf(app) {
+  const login = connLogin();
+  if (!login) return { ok: true };
+  if (await amManager(login)) return { ok: true };
+  const owner = String((app && app.submittedBy) || "");
+  if (!owner) return { ok: false, why: "Legacy store app — only a manager can touch it." };
+  if (owner.toLowerCase() !== login.toLowerCase())
+    return { ok: false, why: "Belongs to @" + owner + " — your area holds only your apps." };
+  return { ok: true };
 }
 function scopeApps(apps, scope) {
   if (scope.mgr) return apps;
@@ -349,6 +363,8 @@ async function doLoad(rawId) {
   if (!apps) { showToast("Could not load the store file.", "error"); return; }
   const app = apps.find((a) => String(a.id || "").toLowerCase() === id.toLowerCase());
   if (!app) { showToast("No live app with that ID. Pick from the list.", "error"); return; }
+  const gate = await ownershipOf(app);
+  if (!gate.ok) { sAppId.value = ""; showToast(gate.why, "error"); return; }
   $("sTitle").value = app.title || "";
   $("sCategory").value = { games: "Games", tools: "Tools", entertainment: "Entertainment", education: "Education", other: "Other" }[app.category] || "Other";
   $("sDesc").value = app.description || "";
@@ -702,6 +718,13 @@ $("fileBtn").addEventListener("click", async () => {
   const f = filing();
   const err = validateFiling(f);
   if (err) { showToast(err, "error"); return; }
+  if (f.action !== "new") {
+    const live = await fetchLiveApps();
+    const target = (live || []).find((a) => String(a.id || "").toLowerCase() === cleanId(f.appId).toLowerCase());
+    if (!target) { showToast("No live app with that ID.", "error"); return; }
+    const gate2 = await ownershipOf(target);
+    if (!gate2.ok) { showToast(gate2.why, "error"); return; }
+  }
   const btn = $("fileBtn");
   btn.disabled = true;
   const old = btn.innerHTML;
