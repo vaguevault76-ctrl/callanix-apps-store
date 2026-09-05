@@ -52,8 +52,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
 .sub-item{display:flex;flex-direction:column;gap:6px;padding:14px 16px;background:linear-gradient(180deg,var(--flap),var(--flap2));border:1px solid var(--line);border-radius:13px;margin-bottom:9px}
 .sub-row{display:flex;align-items:center;gap:14px;width:100%}
-.botmsg{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--mut);background:#0b0d12;border:1px solid var(--line);border-radius:8px;padding:9px 12px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
-.botmsg .botwho{color:var(--pur2);letter-spacing:.1em}
+.thread{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.msg{background:#0b0d12;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.msg-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:5px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em}
+.who{font-weight:700;padding:3px 11px;border-radius:12px;white-space:nowrap}
+.who.bot{color:var(--tea);border:1px solid rgba(0,206,201,.5);background:rgba(0,206,201,.07)}
+.who.dev{color:var(--pur2);border:1px solid rgba(108,92,231,.5);background:rgba(108,92,231,.08)}
+.when{color:var(--dim);white-space:nowrap}
+.msg-body{font-size:12.5px;color:var(--mut);line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.msg-body a{color:var(--pur2)}
 .sub-item .info{flex:1;min-width:0}
 .sub-item .name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sub-item .name a{color:var(--paper);text-decoration:none}
@@ -376,32 +383,62 @@ $("trackBtn").addEventListener("click", async () => {
     const issues = await res.json();
     const mine = issues.filter((i) => (i.user?.login || "").toLowerCase() === user && !i.pull_request);
     if (!mine.length) { list.innerHTML = '<p class="helper">No filings from @' + user + " yet.</p>"; return; }
+    const ago = (ts) => {
+      const s = Math.max(1, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
+      if (s < 60) return "just now";
+      const m = Math.floor(s / 60);
+      if (m < 60) return m + "m ago";
+      const h = Math.floor(m / 60);
+      if (h < 24) return h + "h ago";
+      const d = Math.floor(h / 24);
+      if (d < 30) return d + "d ago";
+      return new Date(ts).toLocaleDateString();
+    };
+    const full = (ts) => { try { return new Date(ts).toLocaleString(); } catch { return ""; } };
+    const isBot = (login) => /\[bot\]$/i.test(login || "");
     list.innerHTML = "";
     for (const i of mine.slice(0, 10)) {
       const [label, cls] = statusOf(i);
+      const me = (i.user && i.user.login) || "";
       const div = document.createElement("div");
       div.className = "sub-item";
       div.innerHTML =
         '<div class="sub-row"><div class="info"><div class="name"><a href="' + i.html_url + '" target="_blank" rel="noopener">' +
-        (i.title || "(untitled)").replace(/</g, "&lt;") + '</a></div><div class="meta">#' + i.number +
-        " · " + new Date(i.updated_at).toLocaleDateString() + "</div></div>" +
+        esc(i.title || "(untitled)") + '</a></div><div class="meta">#' + i.number +
+        " · filed " + ago(i.created_at) + "</div></div>" +
         '<span class="chip ' + cls + '">' + label + "</span></div>";
       list.appendChild(div);
-      const spoken = i.state === "closed" || (i.labels || []).some((l) => ["needs-fix", "approved", "published"].includes(l.name));
-      if (spoken) {
-        try {
-          const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, getToken());
-          if (comments.length) {
-            const last = comments[comments.length - 1];
-            let t = String(last.body || "").replace(/</g, "&lt;");
-            if (t.length > 240) t = t.slice(0, 240) + "…";
-            const note = document.createElement("div");
-            note.className = "botmsg";
-            note.innerHTML = '<span class="botwho">BOT · ' + esc((last.user && last.user.login) || "robot") + "</span><br>" + t;
-            div.appendChild(note);
-          }
-        } catch {}
-      }
+      const thread = document.createElement("div");
+      thread.className = "thread";
+      const opener = document.createElement("div");
+      opener.className = "msg";
+      opener.innerHTML = '<div class="msg-head"><span class="who dev">YOU · ' + esc(me) + '</span>' +
+        '<span class="when" title="' + esc(full(i.created_at)) + '">' + ago(i.created_at) + "</span></div>" +
+        '<div class="msg-body">Filed this request from the portal.</div>';
+      thread.appendChild(opener);
+      try {
+        const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, getToken());
+        comments.slice(-4).forEach((c) => {
+          const login = (c.user && c.user.login) || "ghost";
+          const bot = isBot(login);
+          const who = bot ? "BOT" : (login.toLowerCase() === user ? "YOU" : "@" + login);
+          let t = String(c.body || "");
+          if (t.length > 320) t = t.slice(0, 320) + "… (full text on GitHub)";
+          const m = document.createElement("div");
+          m.className = "msg";
+          m.innerHTML = '<div class="msg-head"><span class="who ' + (bot ? "bot" : "dev") + '">' + esc(who) + "</span>" +
+            '<span class="when" title="' + esc(full(c.created_at)) + '">' + ago(c.created_at) + "</span></div>" +
+            '<div class="msg-body">' + esc(t) + "</div>";
+          thread.appendChild(m);
+        });
+        if (comments.length > 4) {
+          const more = document.createElement("div");
+          more.className = "msg-body";
+          more.innerHTML = '<a href="' + i.html_url + '" target="_blank" rel="noopener">+' + (comments.length - 4) + " older messages on GitHub →</a>";
+          thread.appendChild(more);
+        }
+      } catch {}
+      div.appendChild(thread);
     }
   } catch { list.innerHTML = '<p class="helper">Lookup failed — try again in a minute.</p>'; }
 });
