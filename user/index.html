@@ -179,7 +179,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 <div class="shot-hint"><i class="fas fa-expand"></i>TAP ANY SHOT FOR FULL SCREEN</div>
 <button class="modal-btn" id="modalBtn"><i class="fas fa-download"></i>&nbsp;BOARD — VISIT APP</button>
 </div>
-<div class="perf"><span>VERIFY → BOARD</span><span>SLIP U·<span id="slipNo">000</span></span></div>
+<div class="perf"><span>VERIFY → BOARD</span><span>CONCOURSE U</span></div>
 </div>
 </div>
 <div class="ad-modal" id="adModal" role="dialog" aria-modal="true">
@@ -303,7 +303,7 @@ card.innerHTML =
 '<div class="card-top"><img class="card-icon" src="'+(app.iconUrl||'https://via.placeholder.com/52/6c5ce7/ffffff?text=A')+'" alt="" loading="lazy" onerror="this.src=\'https://via.placeholder.com/52/6c5ce7/ffffff?text=?\'">'+
 '<div><div class="card-code">FLAP ' + String(i+1).padStart(2,'0') + ' · U·HALL</div><div class="card-title">'+(app.title||'Untitled').toUpperCase()+'</div><div class="card-category">'+(app.category||'other').toUpperCase()+'</div><div class="card-dev">BY <b>@'+String(app.submittedBy||'callanix').replace(/[^a-z0-9-]/gi,'').toUpperCase()+'</b></div></div></div>'+
 '<div class="card-desc">'+(app.description||'No description available.')+'</div>'+shots+
-'<div class="card-footer"><span class="card-time">'+(app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'NO DATE')+' · <span class="status-pill">ON TIME</span></span><button class="card-btn" data-id="'+app.id+'">OPEN</button></div>';
+'<div class="card-footer"><span class="card-time">'+(app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'NO DATE')+' · <span class="status-pill">ON TIME</span></span><button class="card-btn">OPEN</button></div>';
 card.querySelector('.card-btn').addEventListener('click', (e) => { e.stopPropagation();openModal(app); });
 card.querySelectorAll('.card-shots img').forEach(img => { img.addEventListener('click', (e) => { e.stopPropagation();openLightbox(app.screenshots, parseInt(img.dataset.full||'0',10)); }); });
 card.addEventListener('click', () => openModal(app));grid.appendChild(card);
@@ -317,7 +317,6 @@ modalTitle.textContent = (app.title || 'Untitled').toUpperCase();
 modalCategory.textContent = (app.category||'other').toUpperCase();
 document.getElementById('modalDev').textContent = '@' + String(app.submittedBy || 'callanix').replace(/[^a-z0-9-]/gi, '').toLowerCase();
 modalDesc.textContent = app.description || 'No description available.';
-document.getElementById('slipNo').textContent = String((app.id||'0')).slice(-3).toUpperCase() || '000';
 modalScreenshots.innerHTML = '';
 if (app.screenshots && app.screenshots.length) {
 app.screenshots.forEach((s, si) => { const img = document.createElement('img');img.src = s;img.loading = 'lazy';img.alt = 'Screenshot '+(si+1);img.onerror = function(){ this.style.display='none'; };img.addEventListener('click', () => openLightbox(app.screenshots, si));modalScreenshots.appendChild(img); });

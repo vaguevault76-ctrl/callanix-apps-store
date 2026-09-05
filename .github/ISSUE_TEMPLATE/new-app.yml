@@ -47,6 +47,12 @@ body:
       placeholder: |
         https://example.com/shot1.jpg
         https://example.com/shot2.jpg
+  - type: input
+    id: contact-email
+    attributes:
+      label: Contact email (optional)
+      description: Your private app ID is emailed here and scrubbed off this public page. Skip it to find the ID in MY APPS instead.
+      placeholder: you@example.com
   - type: checkboxes
     id: confirm
     attributes:

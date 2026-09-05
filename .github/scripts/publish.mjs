@@ -2,6 +2,7 @@
 // Phases: `apply` (mutate links.json, write .results.json) then `report` (comment/label/close).
 // Run `node .github/scripts/publish.mjs --selftest` for offline fixture checks.
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import assert from "node:assert/strict";
@@ -11,6 +12,7 @@ const ROOT = join(DIR, "..", "..");
 const LINKS = join(ROOT, "data", "links.json");
 const PUBLISHERS = join(ROOT, "data", "publishers.json");
 const RESULTS = join(DIR, ".results.json");
+const MAILQ = join(DIR, ".mail.json");
 
 const CATEGORIES = new Set(["games", "tools", "entertainment", "education", "other"]);
 const TOKEN = process.env.GITHUB_TOKEN || "";
@@ -70,6 +72,10 @@ export function parseBody(raw) {
     return m ? m[0] : "";
   };
   const allUrls = (s) => String(s || "").match(/https?:\/\/[^\s)>\]]+/g) || [];
+  const firstEmail = (s) => {
+    const m = String(s || "").match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/);
+    return m ? m[0] : "";
+  };
   return {
     request: get("Request type").toLowerCase().includes("edit")
       ? "edit"
@@ -84,6 +90,10 @@ export function parseBody(raw) {
     adUrl: firstUrl(get("Ad gateway URL (optional)")),
     iconUrl: firstUrl(get("Icon URL (optional)")),
     screenshots: allUrls(get("Screenshot URLs (optional)")).slice(0, 20),
+    contactEmail: (() => {
+      const raw = get("Contact email (optional)").trim();
+      return firstEmail(raw) || (raw && raw !== "_No response_" && !/^none$/i.test(raw) ? raw : "");
+    })(),
     confirmed: /-\s*\[[xX]\]/.test(get("Confirmation")),
   };
 }
@@ -111,6 +121,8 @@ export function validate(sub, apps, mode) {
     const badShots = sub.screenshots.filter((s) => !isUrl(s));
     if (badShots.length) errors.push(`${badShots.length} screenshot line(s) are not valid URLs.`);
     if (sub.screenshots.length > 5) errors.push("At most 5 screenshots are allowed.");
+    if (sub.contactEmail && !/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(sub.contactEmail))
+      errors.push("Contact email doesn't look valid.");
     if (!sub.confirmed) errors.push("Confirmation checkbox must be checked.");
   }
   return errors;
@@ -158,14 +170,14 @@ export function applySubmission(sub, apps, issueNumber, author, privileged) {
     });
     return { ok: true, appId: app.id, action: "updated" };
   }
-  // Unguessable per-app IDs: random, never sequential, so one dev cannot
-  // walk into another dev's apps by trying app-1, app-2, ...
+  // Unguessable per-app IDs: 72-bit cryptographic randomness, never
+  // sequential, nothing to decode — guessing one is computationally hopeless.
   let id = "";
   for (let n = 0; n < 50 && !id; n++) {
-    const cand = "app-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    const cand = "app-" + randomBytes(9).toString("base64url");
     if (!apps.some((a) => a.id === cand)) id = cand;
   }
-  if (!id) id = "app-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  if (!id) id = "app-" + randomBytes(12).toString("base64url") + Date.now().toString(36);
   apps.push({
     id,
     title: sub.title,
@@ -244,7 +256,7 @@ export function decideIssues(issues, apps, priv, mode) {
       continue;
     }
     changed = true;
-    results.push({ issue: issue.number, action: out.action, appId: out.appId, title: sub.title });
+    results.push({ issue: issue.number, action: out.action, appId: out.appId, title: sub.title, contactEmail: sub.contactEmail || "" });
   }
   return { results, changed };
 }
@@ -278,6 +290,8 @@ async function reportPhase() {
     return;
   }
   const results = loadJson(RESULTS, []);
+  const mail = [];
+  const repoUrl = `https://github.com/${REPO}`;
   for (const r of results) {
     if (r.action === "pending") continue;
     const base = `/repos/${REPO}/issues/${r.issue}`;
@@ -291,9 +305,41 @@ async function reportPhase() {
       } catch {}
       continue;
     }
-    await api(`${base}/comments`, "POST", {
-      body: `Live in the store as \`${r.appId}\` (${r.action}). Thanks for the submission.`,
-    });
+    const emailed = Boolean(r.contactEmail) && r.action !== "deleted";
+    if (emailed) {
+      mail.push({
+        to: r.contactEmail,
+        subject: `Your Callanix app ${r.action === "published" ? "is live" : "was updated"}: ${r.title || "your app"}`,
+        body: [
+          "Hi,",
+          "",
+          `Your app "${r.title || "your app"}" ${r.action === "published" ? "is live in the Callanix Store" : "was updated in the Callanix Store"}.`,
+          "",
+          `Private app ID: ${r.appId}`,
+          "Keep it secret — you need it for future edits. You never have to type it: open MY APPS in the Dev Portal (connected as the submitter) to manage it.",
+          "",
+          `Store repo: ${repoUrl}`,
+        ].join("\n"),
+      });
+    }
+    if (r.contactEmail) {
+      // Scrub the address off the public ticket after capturing it.
+      try {
+        const cur = await api(base);
+        const clean = String(cur.body || "")
+          .split("\n")
+          .map((l) => (l.includes(r.contactEmail) ? "(contact delivered privately)" : l))
+          .join("\n");
+        if (clean !== cur.body) await api(base, "PATCH", { body: clean });
+      } catch {}
+    }
+    const note =
+      r.action === "deleted"
+        ? "Removed from the store."
+        : emailed
+          ? "Live in the store. Your private app ID was emailed to you — keep it secret."
+          : "Live in the store. The private app ID is hidden from this page — find it in MY APPS in the Dev Portal (connected as the submitter).";
+    await api(`${base}/comments`, "POST", { body: note });
     await api(`${base}/labels`, "POST", { labels: ["published"] });
     for (const old of ["needs-fix", "approved"]) {
       try {
@@ -302,7 +348,8 @@ async function reportPhase() {
     }
     await api(base, "PATCH", { state: "closed" });
   }
-  console.log(`report: ${results.length} result(s)`);
+  writeFileSync(MAILQ, JSON.stringify(mail, null, 2));
+  console.log(`report: ${results.length} result(s), ${mail.length} mail(s)`);
 }
 
 // ---------- self-test ----------
@@ -345,6 +392,10 @@ function selftest() {
       "",
       over.shots ?? "https://example.com/s1.jpg",
       "",
+      "### Contact email (optional)",
+      "",
+      over.email ?? "_No response_",
+      "",
       "### Confirmation",
       "",
       over.confirm === false ? "- [ ] I have the right to share this app and its links" : "- [X] I have the right to share this app and its links",
@@ -376,7 +427,7 @@ function selftest() {
   const apps = [];
   const r1 = applySubmission(sub, apps, 42, "SomeDev", false);
   assert.equal(r1.ok, true);
-  assert.ok(/^app-[a-z0-9]+$/.test(apps[0].id));
+  assert.ok(/^app-[A-Za-z0-9_-]+$/.test(apps[0].id));
   assert.equal(apps[0].submittedBy, "somedev");
 
   // edit by owner ok, by stranger rejected
@@ -410,7 +461,7 @@ function selftest() {
   let a2 = [];
   let d = decideIssues([fake(7, "Stranger", [], body())], a2, new Set(["owner"]), "auto");
   assert.equal(d.changed, true);
-  assert.ok(/^app-[a-z0-9]+$/.test(a2[0].id));
+  assert.ok(/^app-[A-Za-z0-9_-]+$/.test(a2[0].id));
   assert.equal(d.results[0].action, "published");
 
   let a3 = [];
@@ -488,7 +539,7 @@ function selftest() {
   let a5 = [];
   d = decideIssues([{ number: 15, user: { login: "stranger" }, labels: [], body: portalBody }], a5, new Set(["owner"]), "auto");
   assert.equal(d.results[0].action, "published");
-  assert.ok(/^app-[a-z0-9]+$/.test(a5[0].id));
+  assert.ok(/^app-[A-Za-z0-9_-]+$/.test(a5[0].id));
 
   // form-style tickets carry no Request-type section; labels decide
   const formBody = portalBody
@@ -532,6 +583,14 @@ function selftest() {
   const emptyFancy = fancy.replace("**Fancy App**", "**_No response_**");
   d = decideIssues([{ number: 18, user: { login: "s" }, labels: [], body: emptyFancy }], [], new Set(["o"]), "auto");
   assert.equal(d.results[0].action, "needs-fix");
+
+  // contact email: captured, validated, carried on results, never stored
+  assert.equal(parseBody(body({ email: "dev@example.com" })).contactEmail, "dev@example.com");
+  assert.equal(parseBody(body({ email: "[Mail](mailto:a@b.co)" })).contactEmail, "a@b.co");
+  assert.equal(parseBody(body()).contactEmail, "");
+  assert.ok(validate(parseBody(body({ email: "not-an-email" })), [], "new").some((e) => e.includes("Contact email")));
+  d = decideIssues([fake(20, "s", [], body({ email: "dev@example.com" }))], [], new Set(["o"]), "auto");
+  assert.equal(d.results[0].contactEmail, "dev@example.com");
 
   // HTML in text fields is stripped on write
   const h = [];

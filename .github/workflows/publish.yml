@@ -47,3 +47,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+      - name: Email private app IDs
+        if: success()
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+        run: |
+          if [ -n "$SMTP_HOST" ] && [ -f .github/scripts/.mail.json ] && [ "$(cat .github/scripts/.mail.json)" != "[]" ]; then
+            python3 .github/scripts/mail.py
+          else
+            echo "mail skipped (no SMTP config or empty queue)"
+          fi

@@ -38,14 +38,30 @@ A dual-website app store platform — a public **User Store** and a private **De
 ## Publishing Pipeline
 
 ```
-dev/ form → GitHub Issue (app-submission)
-→ .github/workflows/publish.yml (runs on ticket events + every 5 min)
-→ validates → writes data/links.json → commits
-→ comments app ID + closes ticket → user/ refetches
+dev/ form → GitHub Issue (app-submission) → approval (or auto mode)
+→ .github/workflows/publish.yml → validates → writes data/links.json
+→ commits → ID-free comment + closes ticket → user/ refetches
+→ private app ID emailed (if contact given + SMTP secrets set)
+```
+
+## Private App IDs by Email (optional, free)
+
+1. Create a Gmail app password (Google Account → Security → 2-Step → App passwords).
+2. Repo → Settings → Secrets and variables → Actions → add:
+   `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, `SMTP_USER=you@gmail.com`,
+   `SMTP_PASS=<app password>`, `SMTP_FROM=Callanix Store <you@gmail.com>`.
+3. Done. Published/updated tickets with a contact email trigger the mail;
+   without secrets the step skips silently and IDs stay in MY APPS.
+
+Honest note: IDs can't be invisible — the public `data/links.json` that
+powers the store must contain them. They are unguessable (96-bit random),
+never shown in UI, comments, or tracking, and emailed privately on request.
+Edit/delete tickets must contain the target ID to function; the address is
+scrubbed off the public ticket right after.
 
 Mode in data/publishers.json: "auto" (everyone boards instantly — default)
-or "approve" (strangers wait for the `approved` label).
-```
+or "approve" (strangers wait for the `approved` label). The Action also runs
+on ticket events plus a sweep every 5 minutes.
 
 ## Security
 
@@ -53,6 +69,7 @@ or "approve" (strangers wait for the `approved` label).
 - Only the Action (built-in `GITHUB_TOKEN`) can write `data/links.json`
 - Edits/deletes allowed for the original submitter only (plus allowlisted publishers)
 - Validation caps: 80-char titles, 5 screenshots, URL shapes, confirmation checkbox
+- App IDs are cryptographic random, never shown on any page or ticket, and emailed privately when a contact address is given
 - Anti-copy measures on the user store; GitHub Pages provides free HTTPS encryption
 
 ## Customization

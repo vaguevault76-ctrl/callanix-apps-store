@@ -193,6 +193,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="form-group"><label>ICON URL (OPTIONAL)</label><input type="url" id="sIcon" placeholder="https://example.com/icon.png"></div>
 <div class="form-group"><label>SCREENSHOTS — ONE PER LINE, MAX 5</label><textarea id="sShots" placeholder="https://example.com/shot1.jpg" rows="3"></textarea></div>
 </div>
+<div class="form-group"><label>CONTACT EMAIL (OPTIONAL)</label><input type="email" id="sEmail" placeholder="you@example.com"><div class="helper">Your private app ID is emailed here and scrubbed off the public ticket. Skip it to find the ID in MY APPS instead.</div></div>
 <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:22px;letter-spacing:.05em;margin:22px 0 4px;">TICKET PREVIEW</h3>
 <div class="helper" style="margin-bottom:12px">Live — exactly how the ticket will look on GitHub.</div>
 <div class="pv-doc" id="ticketPreview" aria-live="polite"></div>
@@ -227,7 +228,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="steps">
 <li><i class="fas fa-check-circle"></i><b>1 — Connect once.</b> Classic token, <b>public_repo</b> ticked, paste it above. It stays in your browser. Then FILE FROM HERE sends tickets straight from this page — GitHub never opens.</li>
 <li><i class="fas fa-check-circle"></i><b>2 — Robot check.</b> The publisher robot reads your ticket within about 5 minutes. Its reply (app ID, or what to fix) appears right under your filing in TRACK — no need to open GitHub.</li>
-<li><i class="fas fa-check-circle"></i><b>3 — Live.</b> Good tickets board automatically — no approval taps needed. The ticket gets stamped PUBLISHED with your app ID, and the user store shows it a few minutes later.</li>
+<li><i class="fas fa-check-circle"></i><b>3 — Live.</b> Good tickets board automatically — no approval taps needed. Your private app ID lands in your <b>email</b> (GitHub notifies you on the ticket reply) — save it, it never appears on any page, and it's your key for future edits.</li>
 <li><i class="fas fa-check-circle"></i><b>4 — Control.</b> Bad apps can be removed with a Delete filing. If spam ever appears, the owner can switch on approvals with one word in <b>data/publishers.json</b> ("auto" → "approve").</li>
 </div>
 </div>
@@ -317,7 +318,7 @@ async function loadPickList() {
   else sayScope("Showing " + list.length + " of " + apps.length + " — only @" + scope.login + " uploads.");
   if (!list.length) { sel.innerHTML = '<option value="">No apps in your area yet</option>'; return; }
   sel.innerHTML = '<option value="">Pick one of your apps…</option>' + list.map((a) =>
-    '<option value="' + esc(a.id) + '">' + esc(a.title || "Untitled") + " — " + esc(a.category || "other") + " (@" + esc(String(a.submittedBy || "?").toLowerCase()) + " · " + esc(a.id) + ")</option>"
+    '<option value="' + esc(a.id) + '">' + esc(a.title || "Untitled") + " — " + esc(a.category || "other") + "</option>"
   ).join("");
 }
 async function loadMyApps() {
@@ -340,7 +341,7 @@ async function loadMyApps() {
     d.className = "sub-item";
     const owner = String(a.submittedBy || "").toLowerCase() || "unclaimed";
     d.innerHTML = '<div class="sub-row"><div class="info"><div class="name">' + esc(a.title || "Untitled") + '</div><div class="meta">' +
-      esc(a.category || "other") + " · " + esc(a.id) + " · @" + esc(owner) + "</div></div>" +
+      esc(a.category || "other") + " · @" + esc(owner) + "</div></div>" +
       '<span class="chip ' + (scope.mgr ? "queue" : "live") + '">' + (scope.mgr ? "STORE" : "YOURS") + "</span></div>" +
       '<div class="sub-row" style="gap:8px"><button class="mini-btn" data-e="' + esc(a.id) + '"><i class="fas fa-pen"></i> EDIT</button>' +
       '<button class="mini-btn danger" data-d="' + esc(a.id) + '"><i class="fas fa-trash"></i> REMOVE</button></div>';
@@ -422,6 +423,7 @@ function ticketBody(f) {
     "### Ad gateway URL (optional)", "", link("Open the ad", f.adUrl), "",
     "### Icon URL (optional)", "", link("View the icon", f.icon), "",
     "### Screenshot URLs (optional)", "", shots, "",
+    "### Contact email (optional)", "", $("sEmail").value.trim() || "_No response_", "",
     "### Confirmation", "", "- [X] I have the right to share this app and its links", "",
   ].join("\n");
 }
@@ -437,6 +439,7 @@ function issueUrl(f) {
     "ad-url": f.adUrl,
     "icon-url": f.icon,
     screenshots: f.shots,
+    "contact-email": $("sEmail").value.trim(),
     confirm: "0",
     body: ticketBody(f),
   });
@@ -456,7 +459,8 @@ $("copyBtn").addEventListener("click", async () => {
   const text =
     "Request type: " + f.action + "\nApp ID: " + (f.appId || "-") + "\nApp title: " + f.title +
     "\nCategory: " + f.category + "\nDescription: " + f.desc + "\nApp URL: " + f.url +
-    "\nAd URL: " + (f.adUrl || "-") + "\nIcon URL: " + (f.icon || "-") + "\nScreenshots:\n" + (f.shots || "-");
+    "\nAd URL: " + (f.adUrl || "-") + "\nIcon URL: " + (f.icon || "-") + "\nScreenshots:\n" + (f.shots || "-") +
+    "\nContact email: " + ($("sEmail").value.trim() || "-");
   try {
     await navigator.clipboard.writeText(text);
     showToast("Details copied — paste field by field.", "success");
@@ -526,7 +530,7 @@ $("trackBtn").addEventListener("click", async () => {
           const login = (c.user && c.user.login) || "ghost";
           const bot = isBot(login);
           const who = bot ? "BOT" : (login.toLowerCase() === user ? "YOU" : "@" + login);
-          let t = String(c.body || "");
+          let t = String(c.body || "").replace(/`?(app-[A-Za-z0-9_-]{4,})`?/g, "app-••••");
           if (t.length > 320) t = t.slice(0, 320) + "… (full text on GitHub)";
           const m = document.createElement("div");
           m.className = "msg";
@@ -650,6 +654,7 @@ function resetFiling() {
   $("sAdUrl").value = "";
   $("sIcon").value = "";
   $("sShots").value = "";
+  $("sEmail").value = "";
   const sp = $("sPick");
   if (sp) sp.innerHTML = '<option value="">Switch to Edit/Delete to load…</option>';
   try { renderPreview(); } catch {}
@@ -707,6 +712,8 @@ function validateFiling(f) {
   const shots = f.shots.split("\n").map((s) => s.trim()).filter(Boolean);
   if (shots.length > 5) return "At most 5 screenshots.";
   if (shots.some((s) => !URL_OK(s))) return "One screenshot line is not a URL.";
+  const em = $("sEmail").value.trim();
+  if (em && !/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(em)) return "Contact email doesn't look valid.";
   return "";
 }
 $("fileBtn").addEventListener("click", async () => {
