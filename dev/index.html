@@ -455,7 +455,9 @@ $("trackBtn").addEventListener("click", async () => {
   if (!user) { showToast("Enter a GitHub username.", "error"); return; }
   list.innerHTML = '<p class="helper">Reading the board…</p>';
   try {
-    const res = await fetch(API + "/issues?labels=app-submission&state=all&per_page=100");
+    let tt = "";
+    try { tt = localStorage.getItem("callanix_gh_token") || ""; } catch {}
+    const res = await fetch(API + "/issues?labels=app-submission&state=all&per_page=100", tt ? { headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + tt } } : {});
     if (!res.ok) throw new Error("api");
     const issues = await res.json();
     const mine = issues.filter((i) => (i.user?.login || "").toLowerCase() === user && !i.pull_request);
@@ -552,7 +554,9 @@ renderPreview();
   const el = $("formStatus");
   const need = ["new-app.yml", "edit-app.yml", "delete-app.yml"];
   try {
-    const res = await fetch(API + "/contents/.github/ISSUE_TEMPLATE");
+    let t = "";
+    try { t = localStorage.getItem("callanix_gh_token") || ""; } catch {}
+    const res = await fetch(API + "/contents/.github/ISSUE_TEMPLATE", t ? { headers: { Authorization: "Bearer " + t } } : {});
     if (!res.ok) throw new Error("http");
     const names = (await res.json()).map((f) => f.name);
     if (need.every((n) => names.includes(n))) {
