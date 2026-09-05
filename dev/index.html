@@ -317,7 +317,7 @@ async function loadPickList() {
   else sayScope("Showing " + list.length + " of " + apps.length + " — only @" + scope.login + " uploads.");
   if (!list.length) { sel.innerHTML = '<option value="">No apps in your area yet</option>'; return; }
   sel.innerHTML = '<option value="">Pick one of your apps…</option>' + list.map((a) =>
-    '<option value="' + esc(a.id) + '">' + esc(a.title || "Untitled") + " — " + esc(a.category || "other") + " (" + esc(a.id) + ")</option>"
+    '<option value="' + esc(a.id) + '">' + esc(a.title || "Untitled") + " — " + esc(a.category || "other") + " (@" + esc(String(a.submittedBy || "?").toLowerCase()) + " · " + esc(a.id) + ")</option>"
   ).join("");
 }
 async function loadMyApps() {
@@ -338,8 +338,9 @@ async function loadMyApps() {
   mine.forEach((a) => {
     const d = document.createElement("div");
     d.className = "sub-item";
+    const owner = String(a.submittedBy || "").toLowerCase() || "unclaimed";
     d.innerHTML = '<div class="sub-row"><div class="info"><div class="name">' + esc(a.title || "Untitled") + '</div><div class="meta">' +
-      esc(a.category || "other") + " · " + esc(a.id) + "</div></div>" +
+      esc(a.category || "other") + " · " + esc(a.id) + " · @" + esc(owner) + "</div></div>" +
       '<span class="chip ' + (scope.mgr ? "queue" : "live") + '">' + (scope.mgr ? "STORE" : "YOURS") + "</span></div>" +
       '<div class="sub-row" style="gap:8px"><button class="mini-btn" data-e="' + esc(a.id) + '"><i class="fas fa-pen"></i> EDIT</button>' +
       '<button class="mini-btn danger" data-d="' + esc(a.id) + '"><i class="fas fa-trash"></i> REMOVE</button></div>';
