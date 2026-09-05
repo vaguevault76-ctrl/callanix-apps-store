@@ -519,11 +519,12 @@ function isRemovedIssue(issue) {
 }
 function liveStatus(issue, liveApps) {
   const labels = new Set((issue.labels || []).map((l) => l.name));
-  if (labels.has("needs-fix")) return ["NEEDS FIX", "fix"];
+  if (labels.has("needs-fix")) return ["FAILED", "fix"];
+  if (issue.state === "closed" && !labels.has("published")) return ["FAILED", "fix"];
   const id = appIdOfIssue(issue).toLowerCase();
   const live = id ? (liveApps || []).find((a) => String(a.id || "").toLowerCase() === id) : null;
   const req = reqTypeOf(issue);
-  if (labels.has("published") || issue.state === "closed" && labels.has("published")) {
+  if (labels.has("published")) {
     if (live) {
       const edited = (live.updatedAt && live.createdAt && live.updatedAt !== live.createdAt) || req === "edit";
       return edited ? ["EDITED", "queue"] : ["LIVE", "live"];
@@ -645,7 +646,7 @@ $("trackBtn").addEventListener("click", async () => {
         thread.appendChild(opener);
         try {
           const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, getToken());
-          const show = label === "NEEDS FIX" ? comments.slice(-4) : comments.slice(-2);
+          const show = label === "FAILED" ? comments.slice(-4) : comments.slice(-2);
           show.forEach((c) => {
             const login = (c.user && c.user.login) || "ghost";
             const bot = isBot(login);
