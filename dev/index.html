@@ -59,6 +59,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .who.bot{color:var(--tea);border:1px solid rgba(0,206,201,.5);background:rgba(0,206,201,.07)}
 .who.dev{color:var(--pur2);border:1px solid rgba(108,92,231,.5);background:rgba(108,92,231,.08)}
 .when{color:var(--dim);white-space:nowrap}
+.mini-btn{padding:8px 15px;border-radius:8px;border:1px solid var(--line);background:#1a1f2a;color:var(--mut);font-size:11px;font-weight:700;letter-spacing:.05em;cursor:pointer;font-family:'JetBrains Mono',monospace}
+.mini-btn:hover{color:#fff;border-color:var(--pur)}
+.mini-btn.danger:hover{border-color:var(--red);color:var(--red)}
+.area-count{color:var(--tea)}
 .msg-body{font-size:12.5px;color:var(--mut);line-height:1.65;white-space:pre-wrap;word-break:break-word}
 .msg-body a{color:var(--pur2)}
 .sub-item .info{flex:1;min-width:0}
@@ -160,7 +164,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </div>
 <div class="helper">For edits and removals. Click LOAD CURRENT to pull the live values below.</div>
 <div style="margin-top:12px"><label style="display:block;color:var(--dim);font-size:10.5px;font-weight:700;letter-spacing:.18em;margin-bottom:7px;font-family:'JetBrains Mono',monospace">PICK FROM LIVE STORE (EASIEST — NO PASTING)</label>
-<select id="sPick" style="width:100%;padding:12px 15px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:var(--paper);font-size:14px;outline:none;font-family:'Inter',sans-serif"><option value="">Loading live apps…</option></select></div></div>
+<select id="sPick" style="width:100%;padding:12px 15px;border-radius:10px;border:1px solid var(--line);background:#0b0d12;color:var(--paper);font-size:14px;outline:none;font-family:'Inter',sans-serif"><option value="">Loading live apps…</option></select><div class="helper" id="pickScope" style="margin-top:6px"></div></div></div>
 <div class="form-row">
 <div class="form-group"><label>APP TITLE *</label><input type="text" id="sTitle" placeholder="e.g. My Amazing App"></div>
 <div class="form-group"><label>CATEGORY *</label>
@@ -190,6 +194,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <button class="ghost-btn" id="copyBtn"><i class="fas fa-copy"></i> COPY DETAILS</button>
 </div>
 <div class="helper" style="margin-top:12px">FILE FROM HERE sends the ticket straight from this page (needs Connect above, one-time). The other two buttons are fallbacks.</div>
+</div>
+
+<div class="panel" id="myapps">
+<h2><i class="fas fa-box"></i> My Apps</h2>
+<div class="sub">YOUR PRIVATE AREA · <b class="area-count" id="myCount"></b></div>
+<div id="myList"><p class="helper">Connect GitHub above — your private area appears here.</p></div>
 </div>
 
 <div class="panel" id="track">
@@ -247,14 +257,81 @@ async function fetchLiveApps() {
   }
   return null;
 }
+async function fetchPublishers() {
+  for (const br of ["main", "master"]) {
+    try {
+      const r = await fetch("https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + br + "/data/publishers.json?t=" + Date.now());
+      if (r.ok) return await r.json();
+    } catch (e) {}
+  }
+  return { mode: "auto", autoApprove: [] };
+}
+function connLogin() { try { return localStorage.getItem(UKEY) || ""; } catch { return ""; } }
+async function myScope() {
+  const login = connLogin();
+  if (!login) return { login: "", mgr: false, ok: false };
+  const pub = await fetchPublishers();
+  const low = login.toLowerCase();
+  const mgr = low === String(OWNER).toLowerCase() ||
+    (pub.autoApprove || []).map((u) => String(u).toLowerCase()).includes(low);
+  return { login, mgr, ok: true };
+}
+function scopeApps(apps, scope) {
+  if (scope.mgr) return apps;
+  const low = scope.login.toLowerCase();
+  return apps.filter((a) => String(a.submittedBy || "").toLowerCase() === low);
+}
+function sayScope(msg) { const el = $("pickScope"); if (el) el.textContent = msg || ""; }
 async function loadPickList() {
   const sel = $("sPick");
-  sel.innerHTML = '<option value="">Reading live store…</option>';
+  const scope = await myScope();
+  if (!scope.ok) { sel.innerHTML = '<option value="">Connect to browse your apps — or paste the ID</option>'; sayScope(""); return; }
+  sel.innerHTML = '<option value="">Reading your apps…</option>';
+  sayScope("Checking @" + scope.login + "…");
   const apps = await fetchLiveApps();
-  if (!apps || !apps.length) { sel.innerHTML = '<option value="">Store empty or unreachable</option>'; return; }
-  sel.innerHTML = '<option value="">Pick a live app…</option>' + apps.map((a) =>
+  if (!apps) { sel.innerHTML = '<option value="">Store unreachable</option>'; sayScope("Store unreachable."); return; }
+  const list = scopeApps(apps, scope);
+  if (scope.mgr) sayScope("Manager view — all " + apps.length + " store apps (@"+ scope.login + ").");
+  else sayScope("Showing " + list.length + " of " + apps.length + " — only @" + scope.login + " uploads.");
+  if (!list.length) { sel.innerHTML = '<option value="">No apps in your area yet</option>'; return; }
+  sel.innerHTML = '<option value="">Pick one of your apps…</option>' + list.map((a) =>
     '<option value="' + esc(a.id) + '">' + esc(a.title || "Untitled") + " — " + esc(a.category || "other") + " (" + esc(a.id) + ")</option>"
   ).join("");
+}
+async function loadMyApps() {
+  const box = $("myList"), cnt = $("myCount");
+  const scope = await myScope();
+  if (!scope.ok) {
+    box.innerHTML = '<p class="helper">Connect GitHub above — your private area appears here.</p>';
+    cnt.textContent = "";
+    return;
+  }
+  box.innerHTML = '<p class="helper">Reading your area…</p>';
+  const apps = await fetchLiveApps();
+  if (!apps) { box.innerHTML = '<p class="helper">Store unreachable.</p>'; return; }
+  const mine = scopeApps(apps, scope);
+  cnt.textContent = scope.mgr ? ("MANAGER — ALL " + mine.length) : (mine.length + (mine.length === 1 ? " APP" : " APPS"));
+  if (!mine.length) { box.innerHTML = '<p class="helper">Nothing here yet — file your first app above.</p>'; return; }
+  box.innerHTML = "";
+  mine.forEach((a) => {
+    const d = document.createElement("div");
+    d.className = "sub-item";
+    d.innerHTML = '<div class="sub-row"><div class="info"><div class="name">' + esc(a.title || "Untitled") + '</div><div class="meta">' +
+      esc(a.category || "other") + " · " + esc(a.id) + "</div></div>" +
+      '<span class="chip ' + (scope.mgr ? "queue" : "live") + '">' + (scope.mgr ? "STORE" : "YOURS") + "</span></div>" +
+      '<div class="sub-row" style="gap:8px"><button class="mini-btn" data-e="' + esc(a.id) + '"><i class="fas fa-pen"></i> EDIT</button>' +
+      '<button class="mini-btn danger" data-d="' + esc(a.id) + '"><i class="fas fa-trash"></i> REMOVE</button></div>';
+    box.appendChild(d);
+  });
+  box.querySelectorAll("[data-e]").forEach((b) => b.addEventListener("click", () => {
+    sAction.value = "edit"; appIdGroup.style.display = "block"; loadPickList(); doLoad(b.getAttribute("data-e"));
+    document.getElementById("submit").scrollIntoView({ behavior: "smooth" });
+  }));
+  box.querySelectorAll("[data-d]").forEach((b) => b.addEventListener("click", () => {
+    sAction.value = "delete"; appIdGroup.style.display = "block"; loadPickList(); doLoad(b.getAttribute("data-d"));
+    document.getElementById("submit").scrollIntoView({ behavior: "smooth" });
+    showToast("Review and press FILE FROM HERE to remove.", "info");
+  }));
 }
 async function doLoad(rawId) {
   const id = cleanId(rawId);
@@ -552,6 +629,7 @@ $("connBtn").addEventListener("click", async () => {
     await refreshConn();
     if (prev && prev.toLowerCase() !== String(me.login).toLowerCase()) resetFiling();
     $("tUser").value = me.login;
+    loadMyApps();
     $("trackBtn").click();
     showToast("Connected as @" + me.login + " — showing their filings.", "success");
   } catch { showToast("Token rejected — needs Issues read+write on this repo.", "error"); }
@@ -561,6 +639,8 @@ $("disconnBtn").addEventListener("click", () => {
   resetFiling();
   $("tUser").value = "";
   $("tList").innerHTML = '<p class="helper">No lookup yet. Filings appear here with live status chips.</p>';
+  $("myList").innerHTML = '<p class="helper">Connect GitHub above — your private area appears here.</p>';
+  $("myCount").textContent = "";
   refreshConn();
   showToast("Disconnected.", "info");
 });
@@ -602,6 +682,7 @@ $("fileBtn").addEventListener("click", async () => {
     }, t);
     showToast("Filed as #" + issue.number + " — live in ~10 min.", "success");
     try { $("tUser").value = localStorage.getItem(UKEY) || $("tUser").value; } catch {}
+    loadMyApps();
     $("trackBtn").click();
   } catch {
     showToast("GitHub refused it — token needs Issues read+write on this repo.", "error");
@@ -609,7 +690,7 @@ $("fileBtn").addEventListener("click", async () => {
   btn.disabled = false;
   btn.innerHTML = old;
 });
-refreshConn().then(() => { if ($("tUser").value) $("trackBtn").click(); });
+refreshConn().then(() => { loadMyApps(); if ($("tUser").value) $("trackBtn").click(); });
 </script>
 </body>
 </html>
