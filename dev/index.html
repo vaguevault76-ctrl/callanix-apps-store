@@ -113,6 +113,22 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .pv-dim{color:var(--dim);font-size:12px;font-family:'JetBrains Mono',monospace}
 .pv-warn{color:var(--red);font-size:12px;font-weight:700}
 .pv-check{color:var(--tea);font-size:13.5px}
+.set-btn{padding:9px 17px;border-radius:10px;border:1px solid var(--line);background:#1a1f2a;color:var(--mut);font-size:12px;font-weight:600;letter-spacing:.05em;transition:.22s;font-family:'JetBrains Mono',monospace;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.set-btn:hover{border-color:rgba(108,92,231,.5);color:#fff}
+.set-overlay{position:fixed;inset:0;z-index:200;background:rgba(4,5,8,.7);backdrop-filter:blur(4px);display:none;align-items:flex-start;justify-content:center;padding:70px 16px 30px;overflow-y:auto}
+.set-overlay.open{display:flex}
+.set-sheet{width:100%;max-width:860px;background:linear-gradient(180deg,#141821,#0c0e12);border:1px solid var(--line);border-radius:17px;padding:26px;animation:flap .3s ease}
+.set-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.set-sheet-head h2{font-family:'Barlow Condensed',sans-serif;font-size:27px;letter-spacing:.05em}
+.set-sheet-head h2 i{color:var(--pur2);margin-right:9px}
+.collapse-wrap{display:none;margin-top:12px}
+.collapse-wrap.open{display:block}
+.toggle-btn{padding:11px 20px;border-radius:11px;border:1px solid var(--line);background:#1a1f2a;color:var(--mut);font-size:12px;font-weight:700;cursor:pointer;font-family:'JetBrains Mono',monospace;display:inline-flex;align-items:center;gap:8px}
+.toggle-btn:hover{color:#fff;border-color:var(--pur)}
+.char-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-top:5px;text-align:right}
+.char-count b{color:var(--tea)}
+.imp-tag{color:var(--amber);font-size:10px;letter-spacing:.12em;border:1px solid rgba(253,203,110,.5);border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+#ticketPreview{white-space:pre-wrap}
 @media(max-width:640px){.form-row,.id-row{grid-template-columns:1fr}.main{padding:90px 16px 40px}.panel{padding:20px}}
 @media(prefers-reduced-motion:reduce){.hero{animation:none}}
 </style>
@@ -122,12 +138,19 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <nav class="dash-nav">
 <a class="dash-logo" href="../"><i class="fas fa-tower-broadcast"></i> DEV PORTAL</a>
 <div class="dash-nav-links">
-<a href="#submit">FILE</a>
-<a href="#track">TRACK</a>
-<a href="#guide">GUIDE</a>
-<a href="../">HALL 01</a>
+<button type="button" class="set-btn" id="settingsBtn"><i class="fas fa-gear"></i> SETTINGS</button>
 </div>
 </nav>
+<div class="set-overlay" id="settingsOverlay" role="dialog" aria-modal="true" aria-label="Settings">
+<div class="set-sheet">
+<div class="set-sheet-head">
+<h2><i class="fas fa-gear"></i> SETTINGS</h2>
+<button type="button" class="ghost-btn" id="settingsClose"><i class="fas fa-xmark"></i> CLOSE</button>
+</div>
+<div id="settingsConnectSlot"></div>
+<div id="settingsGuideSlot" style="margin-top:18px"></div>
+</div>
+</div>
 <div class="main">
 <div class="hero">
 <div class="hero-tag">CALLANIX · FILING COUNTER <b>OPEN — NO KEY NEEDED</b></div>
@@ -184,49 +207,52 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <option value="Other" selected>Other</option>
 </select></div>
 </div>
-<div class="form-group"><label>DESCRIPTION *</label><textarea id="sDesc" placeholder="What does this app do? One or two lines." rows="3"></textarea></div>
+<div class="form-group"><label>DESCRIPTION * (MAX 4,000 CHARACTERS)</label><textarea id="sDesc" placeholder="What does this app do? Line breaks are kept exactly as you write them." rows="5" maxlength="4000"></textarea><div class="char-count"><b id="descCount">0</b> / 4,000</div></div>
 <div class="form-row">
 <div class="form-group"><label>APP URL *</label><input type="url" id="sUrl" placeholder="https://yourapp.com"><div class="helper">Final destination of this departure.</div></div>
 <div class="form-group"><label>LOUNGE URL (OPTIONAL)</label><input type="url" id="sAdUrl" placeholder="https://ad-link.com/your-ad"><div class="helper">Shown 5 seconds before the app link.</div></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label>ICON URL (OPTIONAL)</label><input type="url" id="sIcon" placeholder="https://example.com/icon.png"></div>
-<div class="form-group"><label>SCREENSHOTS — ONE PER LINE, MAX 5</label><textarea id="sShots" placeholder="https://example.com/shot1.jpg" rows="3"></textarea></div>
+<div class="form-group"><label>ICON URL <span class="imp-tag">IMPORTANT</span></label><input type="url" id="sIcon" placeholder="https://example.com/icon.png"><div class="helper">Important for app update / unload requests — proves ownership.</div></div>
+<div class="form-group"><label>SCREENSHOTS — ONE PER LINE, MAX 5 <span class="imp-tag">IMPORTANT</span></label><textarea id="sShots" placeholder="https://example.com/shot1.jpg" rows="3"></textarea><div class="helper">Important for app update / unload requests.</div></div>
 </div>
-<div class="form-group"><label>CONTACT EMAIL (OPTIONAL)</label><input type="email" id="sEmail" placeholder="you@example.com"><div class="helper">Your private app ID is emailed here and scrubbed off the public ticket. Skip it to find the ID in MY APPS instead.</div></div>
+<div class="form-group"><label>CONTACT EMAIL <span class="imp-tag">IMPORTANT</span></label><input type="email" id="sEmail" placeholder="you@example.com"><div class="helper">Important for app update / unload requests. Your private app ID is emailed here and scrubbed off the public ticket.</div></div>
 <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:22px;letter-spacing:.05em;margin:22px 0 4px;">TICKET PREVIEW</h3>
-<div class="helper" style="margin-bottom:12px">Live — exactly how the ticket will look on GitHub.</div>
-<div class="pv-doc" id="ticketPreview" aria-live="polite"></div>
+<div class="helper" style="margin-bottom:12px">Hidden by default — open it to check exactly how the ticket will look on GitHub.</div>
+<button type="button" class="toggle-btn" id="previewToggle"><i class="fas fa-eye"></i> SHOW TICKET PREVIEW</button>
+<div class="collapse-wrap" id="previewWrap"><div class="pv-doc" id="ticketPreview" aria-live="polite" style="margin-top:12px"></div></div>
 <div class="actions" style="margin-top:16px">
 <button class="submit-btn" id="fileBtn"><i class="fas fa-paper-plane"></i> FILE FROM HERE</button>
 <button class="ghost-btn" id="openIssueBtn"><i class="fas fa-external-link-alt"></i> OPEN GITHUB INSTEAD</button>
 <button class="ghost-btn" id="copyBtn"><i class="fas fa-copy"></i> COPY DETAILS</button>
 </div>
-<div class="helper" style="margin-top:12px">FILE FROM HERE sends the ticket straight from this page (needs Connect above, one-time). The other two buttons are fallbacks.</div>
+<div class="helper" style="margin-top:12px">FILE FROM HERE sends the ticket straight from this page (needs Connect in Settings, one-time). The other two buttons are fallbacks.</div>
 </div>
 
 <div class="panel" id="myapps">
 <h2><i class="fas fa-box"></i> My Apps</h2>
 <div class="sub">YOUR PRIVATE AREA · <b class="area-count" id="myCount"></b></div>
-<div id="myList"><p class="helper">Connect GitHub above — your private area appears here.</p></div>
+<button type="button" class="toggle-btn" id="myAppsToggle"><i class="fas fa-eye"></i> SHOW MY APPS</button>
+<div class="collapse-wrap" id="myAppsWrap"><div id="myList" style="margin-top:4px"><p class="helper">Connect GitHub in Settings — your private area appears here.</p></div></div>
 </div>
 
 <div class="panel" id="track">
 <h2><i class="fas fa-radar"></i> Track Filings</h2>
 <div class="sub">ENTER YOUR GITHUB USERNAME TO SEE YOUR QUEUE</div>
-<div class="form-group"><label>GITHUB USERNAME</label>
+<button type="button" class="toggle-btn" id="trackToggle"><i class="fas fa-eye"></i> SHOW TRACK FILINGS</button>
+<div class="collapse-wrap" id="trackWrap"><div style="margin-top:4px"><div class="form-group"><label>GITHUB USERNAME</label>
 <div class="id-row">
 <input type="text" id="tUser" placeholder="e.g. octocat" autocomplete="off">
 <button type="button" class="ghost-btn" id="trackBtn"><i class="fas fa-search"></i> LOOK UP</button>
 </div></div>
-<div id="tList"><p class="helper">No lookup yet. Filings appear here with live status chips.</p></div>
+<div id="tList"><p class="helper">No lookup yet. Filings appear here with live status chips.</p></div></div></div>
 </div>
 
 <div class="panel" id="guide">
 <h2><i class="fas fa-map"></i> How It Boards</h2>
 <div class="sub">REPO IS THE DATABASE · ROBOT IS THE PUBLISHER</div>
 <div class="steps">
-<li><i class="fas fa-check-circle"></i><b>1 — Connect once.</b> Classic token, <b>public_repo</b> ticked, paste it above. It stays in your browser. Then FILE FROM HERE sends tickets straight from this page — GitHub never opens.</li>
+<li><i class="fas fa-check-circle"></i><b>1 — Connect once.</b> Classic token, <b>public_repo</b> ticked, paste it in Settings. It stays in your browser. Then FILE FROM HERE sends tickets straight from this page — GitHub never opens.</li>
 <li><i class="fas fa-check-circle"></i><b>2 — Robot check.</b> The publisher robot reads your ticket within about 5 minutes. Its reply (app ID, or what to fix) appears right under your filing in TRACK — no need to open GitHub.</li>
 <li><i class="fas fa-check-circle"></i><b>3 — Live.</b> Good tickets board automatically — no approval taps needed. Your private app ID lands in your <b>email</b> (GitHub notifies you on the ticket reply) — save it, it never appears on any page, and it's your key for future edits.</li>
 <li><i class="fas fa-check-circle"></i><b>4 — Control.</b> Bad apps can be removed with a Delete filing. If spam ever appears, the owner can switch on approvals with one word in <b>data/publishers.json</b> ("auto" → "approve").</li>
@@ -325,7 +351,7 @@ async function loadMyApps() {
   const box = $("myList"), cnt = $("myCount");
   const scope = await myScope();
   if (!scope.ok) {
-    box.innerHTML = '<p class="helper">Connect GitHub above — your private area appears here.</p>';
+    box.innerHTML = '<p class="helper">Connect GitHub in Settings — your private area appears here.</p>';
     cnt.textContent = "";
     return;
   }
@@ -334,7 +360,7 @@ async function loadMyApps() {
   if (!apps) { box.innerHTML = '<p class="helper">Store unreachable.</p>'; return; }
   const mine = scopeApps(apps, scope);
   cnt.textContent = scope.mgr ? ("MANAGER — ALL " + mine.length) : (mine.length + (mine.length === 1 ? " APP" : " APPS"));
-  if (!mine.length) { box.innerHTML = '<p class="helper">Nothing here yet — file your first app above.</p>'; return; }
+  if (!mine.length) { box.innerHTML = '<p class="helper">Nothing here yet — file your first app in New Filing.</p>'; return; }
   box.innerHTML = "";
   mine.forEach((a) => {
     const d = document.createElement("div");
@@ -663,7 +689,7 @@ function resetFiling() {
 $("connBtn").addEventListener("click", async () => {
   const t = $("tToken").value.trim();
   if (!t) { showToast("Paste a token first.", "error"); return; }
-  if (t.indexOf("github_pat_") === 0) { showToast("Fine-grained keys don't fit here — remake as Tokens (classic) + public_repo (3 taps above).", "error"); return; }
+  if (t.indexOf("github_pat_") === 0) { showToast("Fine-grained keys don't fit here — remake as Tokens (classic) + public_repo (3 steps in Settings).", "error"); return; }
   if (t.indexOf("ghp_") !== 0) { showToast("Paste a classic token — it starts with ghp_.", "error"); return; }
   let me = null;
   try {
@@ -695,7 +721,7 @@ $("disconnBtn").addEventListener("click", () => {
   resetFiling();
   $("tUser").value = "";
   $("tList").innerHTML = '<p class="helper">No lookup yet. Filings appear here with live status chips.</p>';
-  $("myList").innerHTML = '<p class="helper">Connect GitHub above — your private area appears here.</p>';
+  $("myList").innerHTML = '<p class="helper">Connect GitHub in Settings — your private area appears here.</p>';
   $("myCount").textContent = "";
   refreshConn();
   showToast("Disconnected.", "info");
@@ -707,6 +733,7 @@ function validateFiling(f) {
   if (!f.title.trim()) return "App title is required.";
   if (!["games", "tools", "entertainment", "education", "other"].includes(f.category.trim().toLowerCase())) return "Pick a valid category.";
   if (!f.desc.trim()) return "Description is required.";
+  if (f.desc.length > 4000) return "Description must be 4,000 characters or less.";
   if (!URL_OK(f.url)) return "App URL must start with http:// or https://.";
   if (f.adUrl.trim() && !URL_OK(f.adUrl)) return "Ad URL looks wrong.";
   if (f.icon.trim() && !URL_OK(f.icon)) return "Icon URL looks wrong.";
@@ -720,7 +747,7 @@ function validateFiling(f) {
 $("fileBtn").addEventListener("click", async () => {
   const t = getToken();
   if (!t) {
-    showToast("Connect GitHub first — one-time, at the top.", "error");
+    showToast("Connect GitHub first — one-time, in Settings.", "error");
     document.getElementById("connect").scrollIntoView({ behavior: "smooth" });
     return;
   }
@@ -763,6 +790,45 @@ $("fileBtn").addEventListener("click", async () => {
   btn.disabled = false;
   btn.innerHTML = old;
 });
+// ---- Settings: Connect + Guide live inside the overlay ----
+(function initSettings() {
+  const overlay = $("settingsOverlay");
+  const cSlot = $("settingsConnectSlot"), gSlot = $("settingsGuideSlot");
+  const conn = $("connect"), guide = $("guide");
+  if (conn && cSlot) cSlot.appendChild(conn);
+  if (guide && gSlot) gSlot.appendChild(guide);
+  const open = () => overlay.classList.add("open");
+  const close = () => overlay.classList.remove("open");
+  $("settingsBtn").addEventListener("click", open);
+  $("settingsClose").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  window.openSettings = open;
+})();
+// ---- Collapsible sections (hidden by default) ----
+function wireToggle(btnId, wrapId, showLabel, hideLabel) {
+  const btn = $(btnId), wrap = $(wrapId);
+  if (!btn || !wrap) return;
+  btn.addEventListener("click", () => {
+    const open = wrap.classList.toggle("open");
+    btn.innerHTML = open
+      ? '<i class="fas fa-eye-slash"></i> ' + hideLabel
+      : '<i class="fas fa-eye"></i> ' + showLabel;
+  });
+}
+wireToggle("previewToggle", "previewWrap", "SHOW TICKET PREVIEW", "HIDE TICKET PREVIEW");
+wireToggle("myAppsToggle", "myAppsWrap", "SHOW MY APPS", "HIDE MY APPS");
+wireToggle("trackToggle", "trackWrap", "SHOW TRACK FILINGS", "HIDE TRACK FILINGS");
+// ---- Description: 4,000 char limit + live counter, format preserved ----
+(function initDescLimit() {
+  const ta = $("sDesc"), count = $("descCount");
+  const update = () => {
+    if (ta.value.length > 4000) ta.value = ta.value.slice(0, 4000);
+    if (count) count.textContent = ta.value.length.toLocaleString();
+  };
+  ta.addEventListener("input", update);
+  update();
+})();
 refreshConn().then(() => { loadMyApps(); if ($("tUser").value) $("trackBtn").click(); });
 </script>
 </body>
