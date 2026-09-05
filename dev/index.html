@@ -148,6 +148,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <button type="button" class="ghost-btn" id="settingsClose"><i class="fas fa-xmark"></i> CLOSE</button>
 </div>
 <div id="settingsConnectSlot"></div>
+<div id="settingsRemovedSlot" style="margin-top:18px"></div>
 <div id="settingsGuideSlot" style="margin-top:18px"></div>
 </div>
 </div>
@@ -213,10 +214,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="form-group"><label>LOUNGE URL (OPTIONAL)</label><input type="url" id="sAdUrl" placeholder="https://ad-link.com/your-ad"><div class="helper">Shown 5 seconds before the app link.</div></div>
 </div>
 <div class="form-row">
-<div class="form-group"><label>ICON URL <span class="imp-tag">IMPORTANT</span></label><input type="url" id="sIcon" placeholder="https://example.com/icon.png"><div class="helper">Important for app update / unload requests — proves ownership.</div></div>
-<div class="form-group"><label>SCREENSHOTS — ONE PER LINE, MAX 5 <span class="imp-tag">IMPORTANT</span></label><textarea id="sShots" placeholder="https://example.com/shot1.jpg" rows="3"></textarea><div class="helper">Important for app update / unload requests.</div></div>
+<div class="form-group"><label>ICON URL * <span class="imp-tag">IMPORTANT</span></label><input type="url" id="sIcon" placeholder="https://example.com/icon.png"><div class="helper">Required — proves ownership for update / unload requests. Filing will not send without it.</div></div>
+<div class="form-group"><label>SCREENSHOTS — ONE PER LINE, MAX 5 * <span class="imp-tag">IMPORTANT</span></label><textarea id="sShots" placeholder="https://example.com/shot1.jpg" rows="3"></textarea><div class="helper">Required — at least 1 line. Filing will not send without it.</div></div>
 </div>
-<div class="form-group"><label>CONTACT EMAIL <span class="imp-tag">IMPORTANT</span></label><input type="email" id="sEmail" placeholder="you@example.com"><div class="helper">Important for app update / unload requests. Your private app ID is emailed here and scrubbed off the public ticket.</div></div>
+<div class="form-group"><label>CONTACT EMAIL * <span class="imp-tag">IMPORTANT</span></label><input type="email" id="sEmail" placeholder="you@example.com"><div class="helper">Required — your private app ID is emailed here and scrubbed off the public ticket. Filing will not send without it.</div></div>
 <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:22px;letter-spacing:.05em;margin:22px 0 4px;">TICKET PREVIEW</h3>
 <div class="helper" style="margin-bottom:12px">Hidden by default — open it to check exactly how the ticket will look on GitHub.</div>
 <button type="button" class="toggle-btn" id="previewToggle"><i class="fas fa-eye"></i> SHOW TICKET PREVIEW</button>
@@ -474,8 +475,10 @@ function issueUrl(f) {
 
 $("openIssueBtn").addEventListener("click", () => {
   const f = filing();
-  if (f.action !== "new" && !f.appId) { showToast("App ID is required for edits and removals.", "error"); return; }
-  if (f.action === "new" && (!f.title || !f.url)) { showToast("Title and App URL are required.", "error"); return; }
+  if (f.action !== "new" && !cleanId(f.appId)) { showToast("App ID is required for edits and removals.", "error"); return; }
+  if (f.action === "delete") { window.open(issueUrl(f), "_blank", "noopener"); return; }
+  const err = validateFiling(f);
+  if (err) { showToast(err, "error"); return; }
   window.open(issueUrl(f), "_blank", "noopener");
   showToast("Ticket opened — press Submit on GitHub.", "info");
 });
@@ -493,17 +496,72 @@ $("copyBtn").addEventListener("click", async () => {
   } catch { showToast("Copy blocked — select the fields manually.", "error"); }
 });
 
-function statusOf(issue) {
+function reqTypeOf(issue) {
   const labels = new Set((issue.labels || []).map((l) => l.name));
-  if (issue.state === "closed") {
-    if (labels.has("published")) return ["LIVE", "live"];
-    return ["CLOSED", "shut"];
-  }
+  if (labels.has("req-edit")) return "edit";
+  if (labels.has("req-delete")) return "delete";
+  if (labels.has("req-new")) return "new";
+  const b = String(issue.body || "").toLowerCase();
+  if (b.includes("delete app")) return "delete";
+  if (b.includes("edit app")) return "edit";
+  return "new";
+}
+function appIdOfIssue(issue) {
+  const b = String(issue.body || "");
+  let m = b.match(/App ID[\s\S]{0,120}?`(app-[A-Za-z0-9_-]{3,})`/i) || b.match(/App ID[\s\S]{0,120}?(app-[A-Za-z0-9_-]{4,})/i);
+  if (m) return m[1];
+  m = b.match(/(app-[A-Za-z0-9_-]{4,})/);
+  return m ? m[1] : "";
+}
+function isRemovedIssue(issue) {
+  const labels = new Set((issue.labels || []).map((l) => l.name));
+  return reqTypeOf(issue) === "delete" && (labels.has("published") || issue.state === "closed");
+}
+function liveStatus(issue, liveApps) {
+  const labels = new Set((issue.labels || []).map((l) => l.name));
   if (labels.has("needs-fix")) return ["NEEDS FIX", "fix"];
+  const id = appIdOfIssue(issue).toLowerCase();
+  const live = id ? (liveApps || []).find((a) => String(a.id || "").toLowerCase() === id) : null;
+  const req = reqTypeOf(issue);
+  if (labels.has("published") || issue.state === "closed" && labels.has("published")) {
+    if (live) {
+      const edited = (live.updatedAt && live.createdAt && live.updatedAt !== live.createdAt) || req === "edit";
+      return edited ? ["EDITED", "queue"] : ["LIVE", "live"];
+    }
+    if (req === "new") {
+      return ["LIVE", "live"];
+    }
+    return ["LIVE", "live"];
+  }
+  if (live) {
+    const edited = (live.updatedAt && live.createdAt && live.updatedAt !== live.createdAt) || req === "edit";
+    return edited ? ["EDITED", "queue"] : ["LIVE", "live"];
+  }
   if (labels.has("approved")) return ["QUEUED", "queue"];
   return ["PENDING REVIEW", "pend"];
 }
+function statusOf(issue) {
+  return liveStatus(issue, []);
+}
 
+function renderRemovedInSettings(removed) {
+  const slot = $("settingsRemovedSlot");
+  if (!slot) return;
+  if (!removed || !removed.length) {
+    slot.innerHTML = '<div class="panel" style="margin:0"><h2><i class="fas fa-trash"></i> Removed Apps</h2><div class="sub">NOTHING REMOVED YET</div><p class="helper">Delete filings that are done land here — never in Track Filings.</p></div>';
+    return;
+  }
+  slot.innerHTML = '<div class="panel" style="margin:0"><h2><i class="fas fa-trash"></i> Removed Apps</h2><div class="sub">' + removed.length + ' REMOVED · HIDDEN FROM TRACK</div><div id="removedList"></div></div>';
+  const box = slot.querySelector("#removedList");
+  removed.forEach((i) => {
+    const d = document.createElement("div");
+    d.className = "sub-item";
+    d.innerHTML = '<div class="sub-row"><div class="info"><div class="name"><a href="' + i.html_url + '" target="_blank" rel="noopener">' +
+      esc(i.title || "(untitled)") + '</a></div><div class="meta">#' + i.number + " · " + esc(appIdOfIssue(i) || "removed") + "</div></div>" +
+      '<span class="chip shut">REMOVED</span></div>';
+    box.appendChild(d);
+  });
+}
 $("trackBtn").addEventListener("click", async () => {
   const user = $("tUser").value.trim().toLowerCase();
   const list = $("tList");
@@ -512,11 +570,17 @@ $("trackBtn").addEventListener("click", async () => {
   try {
     let tt = "";
     try { tt = localStorage.getItem("callanix_gh_token") || ""; } catch {}
+    const liveApps = (await fetchLiveApps()) || [];
+    const liveById = {};
+    liveApps.forEach((a) => { liveById[String(a.id || "").toLowerCase()] = a; });
     const res = await fetch(API + "/issues?labels=app-submission&state=all&per_page=100", tt ? { headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + tt } } : {});
     if (!res.ok) throw new Error("api");
     const issues = await res.json();
     const mine = issues.filter((i) => (i.user?.login || "").toLowerCase() === user && !i.pull_request);
-    if (!mine.length) { list.innerHTML = '<p class="helper">No filings from @' + esc(user) + " yet.</p>"; return; }
+    const removed = mine.filter(isRemovedIssue);
+    renderRemovedInSettings(removed);
+    const visible = mine.filter((i) => !isRemovedIssue(i));
+    if (!visible.length) { list.innerHTML = removed.length ? '<p class="helper">Only removed filings found — see them in Settings → Removed Apps.</p>' : '<p class="helper">No filings from @' + esc(user) + " yet.</p>"; return; }
     const ago = (ts) => {
       const s = Math.max(1, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
       if (s < 60) return "just now";
@@ -531,47 +595,78 @@ $("trackBtn").addEventListener("click", async () => {
     const full = (ts) => { try { return new Date(ts).toLocaleString(); } catch { return ""; } };
     const isBot = (login) => /\[bot\]$/i.test(login || "");
     list.innerHTML = "";
-    for (const i of mine.slice(0, 10)) {
-      const [label, cls] = statusOf(i);
+    for (const i of visible.slice(0, 10)) {
+      const [label, cls] = liveStatus(i, liveApps);
       const me = (i.user && i.user.login) || "";
+      const req = reqTypeOf(i);
+      const aid = appIdOfIssue(i).toLowerCase();
+      const live = aid ? liveById[aid] : null;
       const div = document.createElement("div");
       div.className = "sub-item";
       div.innerHTML =
         '<div class="sub-row"><div class="info"><div class="name"><a href="' + i.html_url + '" target="_blank" rel="noopener">' +
         esc(i.title || "(untitled)") + '</a></div><div class="meta">#' + i.number +
-        " · filed " + ago(i.created_at) + "</div></div>" +
+        " · " + req.toUpperCase() + " · filed " + ago(i.created_at) + "</div></div>" +
         '<span class="chip ' + cls + '">' + label + "</span></div>";
       list.appendChild(div);
       const thread = document.createElement("div");
       thread.className = "thread";
-      const opener = document.createElement("div");
-      opener.className = "msg";
-      opener.innerHTML = '<div class="msg-head"><span class="who dev">YOU · ' + esc(me) + '</span>' +
-        '<span class="when" title="' + esc(full(i.created_at)) + '">' + ago(i.created_at) + "</span></div>" +
-        '<div class="msg-body">Filed this request from the portal.</div>';
-      thread.appendChild(opener);
-      try {
-        const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, getToken());
-        comments.slice(-4).forEach((c) => {
-          const login = (c.user && c.user.login) || "ghost";
-          const bot = isBot(login);
-          const who = bot ? "BOT" : (login.toLowerCase() === user ? "YOU" : "@" + login);
-          let t = String(c.body || "").replace(/`?(app-[A-Za-z0-9_-]{4,})`?/g, "app-••••");
-          if (t.length > 320) t = t.slice(0, 320) + "… (full text on GitHub)";
-          const m = document.createElement("div");
-          m.className = "msg";
-          m.innerHTML = '<div class="msg-head"><span class="who ' + (bot ? "bot" : "dev") + '">' + esc(who) + "</span>" +
-            '<span class="when" title="' + esc(full(c.created_at)) + '">' + ago(c.created_at) + "</span></div>" +
-            '<div class="msg-body">' + esc(t) + "</div>";
-          thread.appendChild(m);
-        });
-        if (comments.length > 4) {
-          const more = document.createElement("div");
-          more.className = "msg-body";
-          more.innerHTML = '<a href="' + i.html_url + '" target="_blank" rel="noopener">+' + (comments.length - 4) + " older messages on GitHub →</a>";
-          thread.appendChild(more);
-        }
-      } catch {}
+      if (label === "EDITED" && live) {
+        const cur = document.createElement("div");
+        cur.className = "msg";
+        cur.innerHTML = '<div class="msg-head"><span class="who bot">LIVE NOW</span>' +
+          '<span class="when">' + esc(live.category || "") + "</span></div>" +
+          '<div class="msg-body"><b>' + esc(live.title || "") + "</b>\n" + esc(String(live.description || "").slice(0, 300)) + "\n" + esc(live.url || "") + "</div>";
+        thread.appendChild(cur);
+        try {
+          const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, getToken());
+          const lastFail = comments.filter((c) => !isBot(c.user && c.user.login)).slice(-1);
+          const lastBot = comments.filter((c) => isBot(c.user && c.user.login)).slice(-1);
+          [...lastBot, ...lastFail].slice(-2).forEach((c) => {
+            if (!c) return;
+            const login = (c.user && c.user.login) || "ghost";
+            const bot = isBot(login);
+            let t = String(c.body || "");
+            if (t.length > 320) t = t.slice(0, 320) + "… (full text on GitHub)";
+            const m = document.createElement("div");
+            m.className = "msg";
+            m.innerHTML = '<div class="msg-head"><span class="who ' + (bot ? "bot" : "dev") + '">' + esc(bot ? "BOT" : "YOU") + "</span>" +
+              '<span class="when" title="' + esc(full(c.created_at)) + '">' + ago(c.created_at) + "</span></div>" +
+              '<div class="msg-body">' + esc(t) + "</div>";
+            thread.appendChild(m);
+          });
+        } catch {}
+      } else {
+        const opener = document.createElement("div");
+        opener.className = "msg";
+        opener.innerHTML = '<div class="msg-head"><span class="who dev">YOU · ' + esc(me) + '</span>' +
+          '<span class="when" title="' + esc(full(i.created_at)) + '">' + ago(i.created_at) + "</span></div>" +
+          '<div class="msg-body">Filed this request from the portal.</div>';
+        thread.appendChild(opener);
+        try {
+          const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, getToken());
+          const show = label === "NEEDS FIX" ? comments.slice(-4) : comments.slice(-2);
+          show.forEach((c) => {
+            const login = (c.user && c.user.login) || "ghost";
+            const bot = isBot(login);
+            const who = bot ? "BOT" : (login.toLowerCase() === user ? "YOU" : "@" + login);
+            let t = String(c.body || "").replace(/`?(app-[A-Za-z0-9_-]{4,})`?/g, "app-••••");
+            if (t.length > 320) t = t.slice(0, 320) + "… (full text on GitHub)";
+            const m = document.createElement("div");
+            m.className = "msg";
+            m.innerHTML = '<div class="msg-head"><span class="who ' + (bot ? "bot" : "dev") + '">' + esc(who) + "</span>" +
+              '<span class="when" title="' + esc(full(c.created_at)) + '">' + ago(c.created_at) + "</span></div>" +
+              '<div class="msg-body">' + esc(t) + "</div>";
+            thread.appendChild(m);
+          });
+          if (comments.length > show.length) {
+            const more = document.createElement("div");
+            more.className = "msg-body";
+            more.innerHTML = '<a href="' + i.html_url + '" target="_blank" rel="noopener">+' + (comments.length - show.length) + " older messages on GitHub →</a>";
+            thread.appendChild(more);
+          }
+        } catch {}
+      }
       div.appendChild(thread);
     }
   } catch { list.innerHTML = '<p class="helper">Lookup failed — try again in a minute.</p>'; }
@@ -591,12 +686,14 @@ function renderPreview() {
   if (f.action !== "new") h += row("App ID", f.appId ? "<code>" + esc(f.appId) + "</code>" : warn("App ID required — pick from the live list"));
   h += row("App title", f.title ? "<b>" + esc(f.title) + "</b>" : (f.action === "delete" ? dim("—") : warn("Title required")));
   h += row("Category", "<code>" + esc(f.category) + "</code>");
-  h += row("Description", f.desc ? "<div class=\"pv-quote\">" + esc(f.desc).replace(/\n/g, "<br>") + "</div>" : (f.action === "delete" ? dim("—") : warn("Description required")));
+  const descWarn = f.desc.length > 4000 ? warn("Over 4,000 characters (" + f.desc.length.toLocaleString() + ") — shorten to under 4,000 or it will not file.") : "";
+  h += row("Description", f.desc ? "<div class=\"pv-quote\">" + esc(f.desc).replace(/\n/g, "<br>") + "</div>" + (descWarn ? "<div style='margin-top:6px'>" + descWarn + "</div>" : "") : (f.action === "delete" ? dim("—") : warn("Description required (max 4,000)")));
   h += row("App URL", !f.url ? (f.action === "delete" ? dim("—") : warn("App URL required")) : !linkOk(f.url) ? warn("Must start with http(s)://") : '<a href="' + esc(f.url) + '" target="_blank" rel="noopener">Open the app</a>');
   if (f.action !== "delete") {
     h += row("Ad gateway URL", optLink("Open the ad", f.adUrl));
-    h += row("Icon URL", optLink("View the icon", f.icon));
-    h += row("Screenshots", shots.length ? '<ol class="pv-ol">' + shots.map((s) => "<li>" + esc(s) + "</li>").join("") + "</ol>" : dim("—"));
+    h += row("Icon URL *", !f.icon ? warn("Icon URL required — filing will not send without it.") : optLink("View the icon", f.icon));
+    h += row("Screenshots (one per line) *", !shots.length ? warn("At least 1 screenshot required — filing will not send without it.") : '<ol class="pv-ol">' + shots.map((s) => "<li>" + esc(s) + "</li>").join("") + "</ol>");
+    h += row("Contact email *", !$("sEmail").value.trim() ? warn("Contact email required — filing will not send without it.") : esc($("sEmail").value.trim()));
   }
   h += '<div class="pv-sec"><div class="pv-v pv-check"><i class="fas fa-check-square"></i> I have the right to share this app and its links</div></div>';
   $("ticketPreview").innerHTML = '<div class="pv-title">' + esc(f.title || f.appId || "new submission") + "</div>" + h;
@@ -733,22 +830,25 @@ function validateFiling(f) {
   if (!f.title.trim()) return "App title is required.";
   if (!["games", "tools", "entertainment", "education", "other"].includes(f.category.trim().toLowerCase())) return "Pick a valid category.";
   if (!f.desc.trim()) return "Description is required.";
-  if (f.desc.length > 4000) return "Description must be 4,000 characters or less.";
+  if (f.desc.length > 4000) return "Description is over 4,000 characters — shorten it to under 4,000 so it can be filed.";
   if (!URL_OK(f.url)) return "App URL must start with http:// or https://.";
   if (f.adUrl.trim() && !URL_OK(f.adUrl)) return "Ad URL looks wrong.";
-  if (f.icon.trim() && !URL_OK(f.icon)) return "Icon URL looks wrong.";
+  if (!f.icon.trim()) return "Icon URL is required — without it the filing will not send.";
+  if (!URL_OK(f.icon)) return "Icon URL must start with http:// or https://.";
   const shots = f.shots.split("\n").map((s) => s.trim()).filter(Boolean);
-  if (shots.length > 5) return "At most 5 screenshots.";
+  if (!shots.length) return "At least 1 screenshot URL is required — one per line.";
+  if (shots.length > 5) return "At most 5 screenshots — one per line.";
   if (shots.some((s) => !URL_OK(s))) return "One screenshot line is not a URL.";
   const em = $("sEmail").value.trim();
-  if (em && !/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(em)) return "Contact email doesn't look valid.";
+  if (!em) return "Contact email is required — without it the filing will not send.";
+  if (!/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(em)) return "Contact email doesn't look valid.";
   return "";
 }
 $("fileBtn").addEventListener("click", async () => {
   const t = getToken();
   if (!t) {
     showToast("Connect GitHub first — one-time, in Settings.", "error");
-    document.getElementById("connect").scrollIntoView({ behavior: "smooth" });
+    try { window.openSettings(); } catch {}
     return;
   }
   const f = filing();
@@ -823,12 +923,21 @@ wireToggle("trackToggle", "trackWrap", "SHOW TRACK FILINGS", "HIDE TRACK FILINGS
 (function initDescLimit() {
   const ta = $("sDesc"), count = $("descCount");
   const update = () => {
-    if (ta.value.length > 4000) ta.value = ta.value.slice(0, 4000);
-    if (count) count.textContent = ta.value.length.toLocaleString();
+    if (ta.value.length > 4000) {
+      ta.value = ta.value.slice(0, 4000);
+      showToast("Description is over 4,000 characters — trimmed to 4,000 so it can file.", "error");
+    }
+    if (count) {
+      count.textContent = ta.value.length.toLocaleString();
+      count.style.color = ta.value.length >= 3800 ? "var(--amber)" : "var(--tea)";
+      if (ta.value.length >= 4000) count.style.color = "var(--red)";
+    }
   };
   ta.addEventListener("input", update);
+  ta.addEventListener("paste", () => setTimeout(update, 0));
   update();
 })();
+try { renderRemovedInSettings([]); } catch {}
 refreshConn().then(() => { loadMyApps(); if ($("tUser").value) $("trackBtn").click(); });
 </script>
 </body>

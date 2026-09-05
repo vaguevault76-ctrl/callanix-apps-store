@@ -19,8 +19,10 @@ body:
     id: description
     attributes:
       label: Description
-      description: One or two lines users will read before downloading.
+      description: Max 4,000 characters. Line breaks are kept exactly as written.
       placeholder: What does this app do?
+    validations:
+      required: true
   - type: input
     id: app-url
     attributes:
@@ -36,23 +38,29 @@ body:
   - type: input
     id: icon-url
     attributes:
-      label: Icon URL (optional)
-      description: Square badge shown on the store row.
+      label: Icon URL (IMPORTANT — required)
+      description: Square badge shown on the store row. Required — proves ownership for updates / removals.
       placeholder: https://example.com/icon.png
+    validations:
+      required: true
   - type: textarea
     id: screenshots
     attributes:
-      label: Screenshot URLs (optional)
-      description: One URL per line, up to 5. Users can open each in full screen.
+      label: Screenshot URLs (IMPORTANT — required, one per line, max 5)
+      description: One URL per line, 1 to 5 required.
       placeholder: |
         https://example.com/shot1.jpg
         https://example.com/shot2.jpg
+    validations:
+      required: true
   - type: input
     id: contact-email
     attributes:
-      label: Contact email (optional)
-      description: Your private app ID is emailed here and scrubbed off this public page. Skip it to find the ID in MY APPS instead.
+      label: Contact email (IMPORTANT — required)
+      description: Your private app ID is emailed here and scrubbed off this public page.
       placeholder: you@example.com
+    validations:
+      required: true
   - type: checkboxes
     id: confirm
     attributes:

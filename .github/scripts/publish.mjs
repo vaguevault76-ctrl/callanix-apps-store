@@ -115,14 +115,17 @@ export function validate(sub, apps, mode) {
     if (!CATEGORIES.has(sub.category))
       errors.push(`Category must be one of: ${[...CATEGORIES].join(", ")}.`);
     if (!sub.description) errors.push("Description is required.");
-    else if (sub.description.length > 1000) errors.push("Description must be 1000 characters or less.");
+    else if (sub.description.length > 4000) errors.push("Description must be 4,000 characters or less — shorten it so users can read it faster.");
     if (!isUrl(sub.url)) errors.push("App URL must start with http:// or https://.");
     if (sub.adUrl && !isUrl(sub.adUrl)) errors.push("Ad URL must start with http:// or https://.");
-    if (sub.iconUrl && !isUrl(sub.iconUrl)) errors.push("Icon URL must start with http:// or https://.");
+    if (!sub.iconUrl) errors.push("Icon URL is required — it proves ownership for future updates / removals.");
+    else if (!isUrl(sub.iconUrl)) errors.push("Icon URL must start with http:// or https://.");
     const badShots = sub.screenshots.filter((s) => !isUrl(s));
+    if (!sub.screenshots.length) errors.push("At least 1 screenshot URL is required — one per line.");
     if (badShots.length) errors.push(`${badShots.length} screenshot line(s) are not valid URLs.`);
     if (sub.screenshots.length > 5) errors.push("At most 5 screenshots are allowed.");
-    if (sub.contactEmail && !/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(sub.contactEmail))
+    if (!sub.contactEmail) errors.push("Contact email is required — your private app ID is emailed there.");
+    else if (!/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(sub.contactEmail))
       errors.push("Contact email doesn't look valid.");
     if (!sub.confirmed) errors.push("Confirmation checkbox must be checked.");
   }
@@ -143,7 +146,7 @@ export function applySubmission(sub, apps, issueNumber, author, privileged) {
   sub = {
     ...sub,
     title: noHtml(sub.title).slice(0, 80),
-    description: noHtml(sub.description).slice(0, 1000),
+    description: noHtml(sub.description).slice(0, 4000),
     category: String(sub.category || "").toLowerCase().trim(),
   };
   if (sub.request === "delete") {
@@ -395,7 +398,7 @@ function selftest() {
       "",
       "### Icon URL (optional)",
       "",
-      over.icon || "_No response_",
+      over.icon ?? "https://example.com/icon.png",
       "",
       "### Screenshot URLs (optional)",
       "",
@@ -403,7 +406,7 @@ function selftest() {
       "",
       "### Contact email (optional)",
       "",
-      over.email ?? "_No response_",
+      over.email ?? "dev@example.com",
       "",
       "### Confirmation",
       "",
@@ -537,8 +540,9 @@ function selftest() {
     "### Description", "", "Filed from the portal.", "",
     "### App URL", "", "https://example.com/p", "",
     "### Ad gateway URL (optional)", "", "_No response_", "",
-    "### Icon URL (optional)", "", "_No response_", "",
-    "### Screenshot URLs (optional)", "", "_No response_", "",
+    "### Icon URL (optional)", "", "https://example.com/icon.png", "",
+    "### Screenshot URLs (optional)", "", "https://example.com/s1.jpg", "",
+    "### Contact email (optional)", "", "dev@example.com", "",
     "### Confirmation", "", "- [X] I have the right to share this app and its links", "",
   ].join("\n");
   assert.equal(isPortalIssue({ labels: [], body: portalBody }), true);
@@ -573,8 +577,9 @@ function selftest() {
     "### Description", "", "> Does things.", "> Second line.", "",
     "### App URL", "", "[Open the app](https://example.com/a)", "",
     "### Ad gateway URL (optional)", "", "_No response_", "",
-    "### Icon URL (optional)", "", "_No response_", "",
+    "### Icon URL (optional)", "", "[View the icon](https://example.com/icon.png)", "",
     "### Screenshot URLs (optional)", "", "1. https://example.com/s1.jpg", "2. https://example.com/s2.jpg", "",
+    "### Contact email (optional)", "", "dev@example.com", "",
     "### Confirmation", "", "- [X] I have the right to share this app and its links", "",
   ].join("\n");
   const fs = parseBody(fancy);
@@ -596,7 +601,12 @@ function selftest() {
   // contact email: captured, validated, carried on results, never stored
   assert.equal(parseBody(body({ email: "dev@example.com" })).contactEmail, "dev@example.com");
   assert.equal(parseBody(body({ email: "[Mail](mailto:a@b.co)" })).contactEmail, "a@b.co");
-  assert.equal(parseBody(body()).contactEmail, "");
+  assert.equal(parseBody(body({ email: "_No response_" })).contactEmail, "");
+  assert.ok(validate(parseBody(body({ email: "_No response_" })), [], "new").some((e) => e.includes("Contact email")));
+  assert.ok(validate(parseBody(body({ icon: "_No response_" })), [], "new").some((e) => e.includes("Icon URL")));
+  assert.ok(validate(parseBody(body({ shots: "_No response_" })), [], "new").some((e) => e.includes("screenshot")));
+  assert.ok(validate(parseBody(body({ desc: "x".repeat(4001) })), [], "new").some((e) => e.includes("4,000")));
+  assert.deepEqual(validate(parseBody(body({ desc: "x".repeat(4000) })), [], "new"), []);
   assert.ok(validate(parseBody(body({ email: "not-an-email" })), [], "new").some((e) => e.includes("Contact email")));
   d = decideIssues([fake(20, "s", [], body({ email: "dev@example.com" }))], [], new Set(["o"]), "auto");
   assert.equal(d.results[0].contactEmail, "dev@example.com");
