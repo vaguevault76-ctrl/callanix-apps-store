@@ -539,26 +539,59 @@ function isRemovedIssue(issue) {
   const labels = new Set((issue.labels || []).map((l) => l.name));
   return reqTypeOf(issue) === "delete" && (labels.has("published") || issue.state === "closed");
 }
-function isGoneIssue(issue, liveApps, liveById) {
-  if (isRemovedIssue(issue)) return true;
-  if (!liveApps) return false;
-  const labels = new Set((issue.labels || []).map((l) => l.name));
-  if (!labels.has("published") && issue.state !== "closed") return false;
-  const ts = Date.parse(issue.updated_at || issue.closed_at || issue.created_at) || 0;
-  if (Date.now() - ts < 20 * 60 * 1000) return false;
-  if (!(liveApps || []).length) return false;
-  const id = appIdOfIssue(issue).toLowerCase();
-  if (id) {
-    if (liveById && liveById[id]) return false;
-    if ((liveApps || []).some((a) => String(a.id || "").toLowerCase() === id)) return false;
-    return true;
+async function fetchRemoved() {
+  for (const u of ["../data/removed.json", "data/removed.json", "./data/removed.json"]) {
+    try {
+      const res = await fetch(u + "?t=" + Date.now(), { cache: "no-store" });
+      if (res.ok) {
+        const j = await res.json();
+        if (Array.isArray(j)) return j;
+      }
+    } catch (e) {}
   }
-  if ((liveApps || []).some((a) => String(a.sourceIssue || "") === String(issue.number))) return false;
-  const t = String(issue.title || "").trim().toLowerCase();
-  if (t && (liveApps || []).some((a) => String(a.title || "").trim().toLowerCase() === t)) return false;
-  return true;
+  try {
+    let tt = "";
+    try { tt = localStorage.getItem("callanix_gh_token") || ""; } catch {}
+    for (const br of ["main", "master"]) {
+      try {
+        const res = await fetch(API + "/contents/data/removed.json?ref=" + br + "&t=" + Date.now(), tt ? { headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + tt } } : {});
+        if (res.ok) {
+          const j = await res.json();
+          const arr = JSON.parse(atob(String(j.content || "").replace(/\n/g, "")));
+          if (Array.isArray(arr)) return arr;
+        }
+      } catch (e) {}
+    }
+  } catch (e) {}
+  for (const br of ["main", "master"]) {
+    try {
+      const res = await fetch("https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + br + "/data/removed.json?t=" + Date.now(), { cache: "no-store" });
+      if (res.ok) {
+        const j = await res.json();
+        if (Array.isArray(j)) return j;
+      }
+    } catch (e) {}
+  }
+  return [];
 }
-function liveStatus(issue, liveApps) {
+function buildGone(tombs) {
+  const byId = {}, bySource = {};
+  (tombs || []).forEach((r) => {
+    const id = String(r.id || "").toLowerCase();
+    if (id) byId[id] = r;
+    if (r.sourceIssue != null) bySource[String(r.sourceIssue)] = r;
+  });
+  return { byId, bySource };
+}
+function isGoneIssue(issue, gone) {
+  if (isRemovedIssue(issue)) return true;
+  if (!gone) return false;
+  const id = appIdOfIssue(issue).toLowerCase();
+  if (id && gone.byId[id]) return true;
+  if (gone.bySource[String(issue.number)]) return true;
+  return false;
+}
+function liveStatus(issue, liveApps, gone) {
   const labels = new Set((issue.labels || []).map((l) => l.name));
   if (labels.has("needs-fix")) return ["FAILED", "fix"];
   if (issue.state === "closed" && !labels.has("published")) return ["FAILED", "fix"];
@@ -570,23 +603,9 @@ function liveStatus(issue, liveApps) {
       const edited = (live.updatedAt && live.createdAt && live.updatedAt !== live.createdAt) || req === "edit";
       return edited ? ["EDITED", "queue"] : ["LIVE", "live"];
     }
+    if (gone && ((id && gone.byId[id]) || gone.bySource[String(issue.number)])) return ["REMOVED", "shut"];
     if (req === "delete") return ["REMOVED", "shut"];
-    if (id) {
-      if ((liveApps || []).length) {
-        const ts = Date.parse(issue.updated_at || issue.closed_at || issue.created_at) || 0;
-        if (Date.now() - ts < 20 * 60 * 1000) return ["LIVE", "live"];
-        return ["REMOVED", "shut"];
-      }
-      return ["LIVE", "live"];
-    }
-    const t = String(issue.title || "").trim().toLowerCase();
-    if (t && (liveApps || []).some((a) => String(a.title || "").trim().toLowerCase() === t)) return ["LIVE", "live"];
-    if ((liveApps || []).some((a) => String(a.sourceIssue || "") === String(issue.number))) return ["LIVE", "live"];
-    if ((liveApps || []).length) {
-      const ts2 = Date.parse(issue.updated_at || issue.closed_at || issue.created_at) || 0;
-      if (Date.now() - ts2 < 20 * 60 * 1000) return ["LIVE", "live"];
-      return ["REMOVED", "shut"];
-    }
+    if (id) return ["EDITED", "queue"];
     return ["LIVE", "live"];
   }
   if (live) {
@@ -597,23 +616,31 @@ function liveStatus(issue, liveApps) {
   return ["PENDING REVIEW", "pend"];
 }
 function statusOf(issue) {
-  return liveStatus(issue, []);
+  return liveStatus(issue, [], null);
 }
 
-function renderRemovedInSettings(removed) {
+function renderRemovedInSettings(entries) {
   const slot = $("settingsRemovedSlot");
   if (!slot) return;
-  if (!removed || !removed.length) {
+  const seen = new Set();
+  const list = [];
+  (entries || []).forEach((e) => {
+    const key = String(e.id || e.title || "").toLowerCase();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    list.push(e);
+  });
+  if (!list.length) {
     slot.innerHTML = '<div class="panel" style="margin:0"><h2><i class="fas fa-trash"></i> Removed Apps</h2><div class="sub">NOTHING REMOVED YET</div><p class="helper">Delete filings that are done land here — never in Track Filings.</p></div>';
     return;
   }
-  slot.innerHTML = '<div class="panel" style="margin:0"><h2><i class="fas fa-trash"></i> Removed Apps</h2><div class="sub">' + removed.length + ' REMOVED · HIDDEN FROM TRACK</div><div id="removedList"></div></div>';
+  slot.innerHTML = '<div class="panel" style="margin:0"><h2><i class="fas fa-trash"></i> Removed Apps</h2><div class="sub">' + list.length + ' REMOVED · HIDDEN FROM TRACK</div><div id="removedList"></div></div>';
   const box = slot.querySelector("#removedList");
-  removed.forEach((i) => {
+  list.forEach((e) => {
     const d = document.createElement("div");
     d.className = "sub-item";
-    d.innerHTML = '<div class="sub-row"><div class="info"><div class="name"><a href="' + i.html_url + '" target="_blank" rel="noopener">' +
-      esc(i.title || "(untitled)") + '</a></div><div class="meta">#' + i.number + " · " + esc(appIdOfIssue(i) || "removed") + "</div></div>" +
+    d.innerHTML = '<div class="sub-row"><div class="info"><div class="name"><a href="' + e.url + '" target="_blank" rel="noopener">' +
+      esc(e.title || "(untitled)") + '</a></div><div class="meta">' + esc(e.id || "removed") + "</div></div>" +
       '<span class="chip shut">REMOVED</span></div>';
     box.appendChild(d);
   });
@@ -643,12 +670,26 @@ $("trackBtn").addEventListener("click", async () => {
     if (!res.ok) throw new Error("api");
     const issues = await res.json();
     const mine = issues.filter((i) => (i.user?.login || "").toLowerCase() === user && !i.pull_request);
-    const liveById = {};
-    liveApps.forEach((a) => { liveById[String(a.id || "").toLowerCase()] = a; });
-    const removed = mine.filter((i) => isGoneIssue(i, liveApps, liveById));
-    renderRemovedInSettings(removed);
-    const visible = mine.filter((i) => !isGoneIssue(i, liveApps, liveById));
-    if (!visible.length) { list.innerHTML = removed.length ? '<p class="helper">Only removed filings found — see them in Settings → Removed Apps.</p>' : '<p class="helper">No filings from @' + esc(me) + " yet.</p>"; return; }
+    const tombs = (await fetchRemoved()) || [];
+    const ownTombs = tombs.filter((r) => String(r.submittedBy || "").toLowerCase() === user);
+    const gone = buildGone(tombs);
+    const entries = [];
+    ownTombs.forEach((r) => {
+      entries.push({
+        id: r.id,
+        title: r.title || "(untitled)",
+        url: "https://github.com/" + OWNER + "/" + REPO + "/issues/" + (r.deletedByIssue || r.sourceIssue || ""),
+      });
+    });
+    mine.filter(isRemovedIssue).forEach((i) => {
+      const id = appIdOfIssue(i);
+      if (id && gone.byId[id.toLowerCase()]) return;
+      entries.push({ id: id || "removed", title: i.title || "(untitled)", url: i.html_url });
+    });
+    renderRemovedInSettings(entries);
+    const removedCount = entries.length;
+    const visible = mine.filter((i) => !isGoneIssue(i, gone));
+    if (!visible.length) { list.innerHTML = removedCount ? '<p class="helper">Only removed filings found — see them in Settings → Removed Apps.</p>' : '<p class="helper">No filings from @' + esc(me) + " yet.</p>"; return; }
     const ago = (ts) => {
       const s = Math.max(1, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
       if (s < 60) return "just now";
@@ -663,8 +704,9 @@ $("trackBtn").addEventListener("click", async () => {
     const full = (ts) => { try { return new Date(ts).toLocaleString(); } catch { return ""; } };
     const isBot = (login) => /\[bot\]$/i.test(login || "");
     list.innerHTML = "";
+    const goneForStatus = gone;
     for (const i of visible.slice(0, 10)) {
-      const [label, cls] = liveStatus(i, liveApps);
+      const [label, cls] = liveStatus(i, liveApps, goneForStatus);
       if (label === "REMOVED") continue;
       const req = reqTypeOf(i);
       const div = document.createElement("div");

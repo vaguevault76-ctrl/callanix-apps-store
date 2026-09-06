@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 const DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(DIR, "..", "..");
 const LINKS = join(ROOT, "data", "links.json");
+const REMOVED = join(ROOT, "data", "removed.json");
 const PUBLISHERS = join(ROOT, "data", "publishers.json");
 const RESULTS = join(DIR, ".results.json");
 const REPORT = join(DIR, ".report.json");
@@ -140,7 +141,7 @@ function authorized(sub, app, author, privileged) {
 // ---------- apply ----------
 const noHtml = (s) => String(s || "").replace(/<[^>]*>/g, "").trim();
 
-export function applySubmission(sub, apps, issueNumber, author, privileged) {
+export function applySubmission(sub, apps, issueNumber, author, privileged, removed) {
   const now = new Date().toISOString();
   sub = {
     ...sub,
@@ -154,6 +155,19 @@ export function applySubmission(sub, apps, issueNumber, author, privileged) {
     if (!authorized(sub, apps[idx], author, privileged))
       return { ok: false, errors: ["Only the original submitter can delete this app."] };
     const [gone] = apps.splice(idx, 1);
+    if (Array.isArray(removed)) {
+      const low = String(gone.id || "").toLowerCase();
+      if (low && !removed.some((r) => String(r.id || "").toLowerCase() === low)) {
+        removed.push({
+          id: gone.id,
+          title: gone.title || "",
+          sourceIssue: gone.sourceIssue ?? null,
+          submittedBy: (gone.submittedBy || author || "").toLowerCase(),
+          deletedAt: now,
+          deletedByIssue: issueNumber,
+        });
+      }
+    }
     return { ok: true, appId: gone.id, action: "deleted" };
   }
   if (sub.request === "edit") {
@@ -227,9 +241,10 @@ export function isPortalIssue(issue) {
   return String(issue.body || "").trimStart().startsWith(PORTAL_MARKER);
 }
 
-export function decideIssues(issues, apps, priv, mode) {
+export function decideIssues(issues, apps, priv, mode, removed) {
   const results = [];
   let changed = false;
+  const removedCount = Array.isArray(removed) ? removed.length : 0;
   for (const issue of issues) {
     if (issue.pull_request) continue;
     const labels = new Set((issue.labels || []).map((l) => l.name));
@@ -254,7 +269,7 @@ export function decideIssues(issues, apps, priv, mode) {
       results.push({ issue: issue.number, action: "needs-fix", errors });
       continue;
     }
-    const out = applySubmission(sub, apps, issue.number, author, isPriv);
+    const out = applySubmission(sub, apps, issue.number, author, isPriv, removed);
     if (!out.ok) {
       results.push({ issue: issue.number, action: "needs-fix", errors: out.errors });
       continue;
@@ -262,11 +277,13 @@ export function decideIssues(issues, apps, priv, mode) {
     changed = true;
     results.push({ issue: issue.number, action: out.action, appId: out.appId, title: sub.title, contactEmail: sub.contactEmail || "" });
   }
-  return { results, changed };
+  const removedChanged = Array.isArray(removed) ? removed.length !== removedCount : false;
+  return { results, changed, removedChanged };
 }
 
 async function applyPhase() {
   const apps = loadJson(LINKS, []);
+  const removed = loadJson(REMOVED, []);
   const priv = privilegedUsers();
   const mode = publishMode();
   const issues = await api(
@@ -280,8 +297,9 @@ async function applyPhase() {
       if (!seen.has(i.number) && isPortalIssue(i)) issues.push(i);
     }
   } catch {}
-  const { results, changed } = decideIssues(issues, apps, priv, mode);
+  const { results, changed, removedChanged } = decideIssues(issues, apps, priv, mode, removed);
   if (changed) writeFileSync(LINKS, JSON.stringify(apps, null, 2) + "\n");
+  if (removedChanged) writeFileSync(REMOVED, JSON.stringify(removed, null, 2) + "\n");
   // REPORT carries contact emails for the report phase; RESULTS is the
   // public-safe copy that the workflow prints into the action log.
   writeFileSync(REPORT, JSON.stringify(results, null, 2));
@@ -456,6 +474,20 @@ function selftest() {
   assert.equal(applySubmission(dsub, apps, 44, "anyone", true).action, "deleted");
   assert.equal(apps.length, 0);
 
+  // delete writes exactly one tombstone per app id, never duplicates
+  const appsT = [];
+  const rT = applySubmission(sub, appsT, 42, "SomeDev", false);
+  const tombId = appsT[0].id;
+  const removedT = [];
+  const dT = parseBody(body({ request: "Delete app", appId: tombId, title: "x", desc: "x" }));
+  assert.equal(applySubmission(dT, appsT, 44, "SomeDev", false, removedT).action, "deleted");
+  assert.equal(removedT.length, 1);
+  assert.equal(removedT[0].id, tombId);
+  assert.equal(removedT[0].sourceIssue, 42);
+  assert.equal(removedT[0].submittedBy, "somedev");
+  assert.equal(applySubmission(dT, appsT, 45, "SomeDev", false, removedT).ok, false);
+  assert.equal(removedT.length, 1);
+
   // approval modes
   const priv = new Set(["owner"]);
   assert.equal(approvedFor({ labels: new Set(), author: "stranger", priv, mode: "auto" }), true);
@@ -521,15 +553,20 @@ function selftest() {
 
   // request type comes from the ticket's own form labels, even when the
   // body still says "New app" (retired single template)
-  let a4 = [{ id: "app-7", title: "Old", submittedBy: "stranger" }];
+  let a4 = [{ id: "app-7", title: "Old", submittedBy: "stranger", sourceIssue: 5 }];
+  const r4 = [];
   d = decideIssues(
     [fake(14, "Stranger", ["app-submission", "req-delete"], body({ appId: "app-7" }))],
     a4,
     new Set(["owner"]),
-    "auto"
+    "auto",
+    r4
   );
   assert.equal(d.results[0].action, "deleted");
   assert.equal(a4.length, 0);
+  assert.equal(d.removedChanged, true);
+  assert.equal(r4.length, 1);
+  assert.equal(r4[0].id, "app-7");
 
   // unlabeled portal filings (labels param dropped) are recognizable
   const portalBody = [
