@@ -101,15 +101,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .toast.info{background:#141322;border:1px solid rgba(108,92,231,.5);color:var(--pur2)}
 .foot{text-align:center;padding:26px;color:var(--dim);font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
 .foot a{color:var(--pur2);text-decoration:none}
-.pv-doc{background:#0b0d12;border:1px solid var(--line);border-radius:12px;padding:22px 22px 14px}
-.pv-title{font-size:19px;font-weight:800;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)}
-.pv-sec{margin-bottom:14px}
+.pv-doc{background:#0b0d12;border:1px solid var(--line);border-radius:12px;padding:22px 22px 14px;max-width:100%;overflow:hidden;overflow-wrap:anywhere}
+.pv-title{font-size:19px;font-weight:800;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line);overflow-wrap:anywhere;word-break:break-word;min-width:0}
+.pv-sec{margin-bottom:14px;min-width:0}
 .pv-h{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;color:var(--dim);margin-bottom:5px}
-.pv-v{font-size:14px;line-height:1.65}
-.pv-v code{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:#1a1f2a;padding:2px 8px;border-radius:6px;color:var(--pur2)}
-.pv-v a{color:var(--pur2)}
-.pv-quote{border-left:3px solid var(--pur);padding:2px 0 2px 12px;color:var(--mut)}
-.pv-ol{margin:0;padding-left:22px;color:var(--mut)}
+.pv-v{font-size:14px;line-height:1.65;overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}
+.pv-v code{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:#1a1f2a;padding:2px 8px;border-radius:6px;color:var(--pur2);overflow-wrap:anywhere;word-break:break-all;white-space:pre-wrap}
+.pv-v a{color:var(--pur2);overflow-wrap:anywhere;word-break:break-all}
+.pv-quote{border-left:3px solid var(--pur);padding:2px 0 2px 12px;color:var(--mut);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}
+.pv-ol{margin:0;padding-left:22px;color:var(--mut);overflow-wrap:anywhere;word-break:break-word}
+.pv-ol li{overflow-wrap:anywhere;word-break:break-all}
 .pv-dim{color:var(--dim);font-size:12px;font-family:'JetBrains Mono',monospace}
 .pv-warn{color:var(--red);font-size:12px;font-weight:700}
 .pv-check{color:var(--tea);font-size:13.5px}
@@ -128,7 +129,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 .char-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-top:5px;text-align:right}
 .char-count b{color:var(--tea)}
 .imp-tag{color:var(--amber);font-size:10px;letter-spacing:.12em;border:1px solid rgba(253,203,110,.5);border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:middle}
-#ticketPreview{white-space:pre-wrap}
+#ticketPreview{white-space:normal;overflow-wrap:anywhere;word-break:break-word;max-width:100%;overflow:hidden;min-width:0}
+#previewWrap{max-width:100%;overflow:hidden;min-width:0}
 @media(max-width:640px){.form-row,.id-row{grid-template-columns:1fr}.main{padding:90px 16px 40px}.panel{padding:20px}}
 @media(prefers-reduced-motion:reduce){.hero{animation:none}}
 </style>
@@ -514,6 +516,24 @@ function isRemovedIssue(issue) {
   const labels = new Set((issue.labels || []).map((l) => l.name));
   return reqTypeOf(issue) === "delete" && (labels.has("published") || issue.state === "closed");
 }
+function isGoneIssue(issue, liveApps, liveById) {
+  const labels = new Set((issue.labels || []).map((l) => l.name));
+  if (isRemovedIssue(issue)) return true;
+  const req = reqTypeOf(issue);
+  const id = appIdOfIssue(issue).toLowerCase();
+  if (id) {
+    if (liveById && liveById[id]) return false;
+    if ((liveApps || []).some((a) => String(a.id || "").toLowerCase() === id)) return false;
+    return labels.has("published") || issue.state === "closed";
+  }
+  if (labels.has("published") || issue.state === "closed") {
+    if ((liveApps || []).some((a) => String(a.sourceIssue || "") === String(issue.number))) return false;
+    const t = String(issue.title || "").trim().toLowerCase();
+    if (t && (liveApps || []).some((a) => String(a.title || "").trim().toLowerCase() === t)) return false;
+    return true;
+  }
+  return false;
+}
 function liveStatus(issue, liveApps) {
   const labels = new Set((issue.labels || []).map((l) => l.name));
   if (labels.has("needs-fix")) return ["FAILED", "fix"];
@@ -526,9 +546,12 @@ function liveStatus(issue, liveApps) {
       const edited = (live.updatedAt && live.createdAt && live.updatedAt !== live.createdAt) || req === "edit";
       return edited ? ["EDITED", "queue"] : ["LIVE", "live"];
     }
-    if (req === "new") {
-      return ["LIVE", "live"];
-    }
+    if (req === "delete") return ["REMOVED", "shut"];
+    if (id) return ["REMOVED", "shut"];
+    const t = String(issue.title || "").trim().toLowerCase();
+    if (t && (liveApps || []).some((a) => String(a.title || "").trim().toLowerCase() === t)) return ["LIVE", "live"];
+    if ((liveApps || []).some((a) => String(a.sourceIssue || "") === String(issue.number))) return ["LIVE", "live"];
+    if ((liveApps || []).length) return ["REMOVED", "shut"];
     return ["LIVE", "live"];
   }
   if (live) {
@@ -585,9 +608,11 @@ $("trackBtn").addEventListener("click", async () => {
     if (!res.ok) throw new Error("api");
     const issues = await res.json();
     const mine = issues.filter((i) => (i.user?.login || "").toLowerCase() === user && !i.pull_request);
-    const removed = mine.filter(isRemovedIssue);
+    const liveById = {};
+    liveApps.forEach((a) => { liveById[String(a.id || "").toLowerCase()] = a; });
+    const removed = mine.filter((i) => isGoneIssue(i, liveApps, liveById));
     renderRemovedInSettings(removed);
-    const visible = mine.filter((i) => !isRemovedIssue(i));
+    const visible = mine.filter((i) => !isGoneIssue(i, liveApps, liveById));
     if (!visible.length) { list.innerHTML = removed.length ? '<p class="helper">Only removed filings found — see them in Settings → Removed Apps.</p>' : '<p class="helper">No filings from @' + esc(me) + " yet.</p>"; return; }
     const ago = (ts) => {
       const s = Math.max(1, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
@@ -605,6 +630,7 @@ $("trackBtn").addEventListener("click", async () => {
     list.innerHTML = "";
     for (const i of visible.slice(0, 10)) {
       const [label, cls] = liveStatus(i, liveApps);
+      if (label === "REMOVED") continue;
       const req = reqTypeOf(i);
       const div = document.createElement("div");
       div.className = "sub-item";

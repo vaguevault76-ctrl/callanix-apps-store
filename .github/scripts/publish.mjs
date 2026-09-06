@@ -193,6 +193,7 @@ export function applySubmission(sub, apps, issueNumber, author, privileged) {
     createdAt: now,
     updatedAt: now,
     submittedBy: author.toLowerCase(),
+    sourceIssue: issueNumber,
   });
   return { ok: true, appId: id, action: "published" };
 }
