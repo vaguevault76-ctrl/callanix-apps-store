@@ -124,8 +124,7 @@ export function validate(sub, apps, mode) {
     if (!sub.screenshots.length) errors.push("At least 1 screenshot URL is required — one per line.");
     if (badShots.length) errors.push(`${badShots.length} screenshot line(s) are not valid URLs.`);
     if (sub.screenshots.length > 5) errors.push("At most 5 screenshots are allowed.");
-    if (!sub.contactEmail) errors.push("Contact email is required — your private app ID is emailed there.");
-    else if (!/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(sub.contactEmail))
+    if (sub.contactEmail && !/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(sub.contactEmail))
       errors.push("Contact email doesn't look valid.");
     if (!sub.confirmed) errors.push("Confirmation checkbox must be checked.");
   }
@@ -602,7 +601,7 @@ function selftest() {
   assert.equal(parseBody(body({ email: "dev@example.com" })).contactEmail, "dev@example.com");
   assert.equal(parseBody(body({ email: "[Mail](mailto:a@b.co)" })).contactEmail, "a@b.co");
   assert.equal(parseBody(body({ email: "_No response_" })).contactEmail, "");
-  assert.ok(validate(parseBody(body({ email: "_No response_" })), [], "new").some((e) => e.includes("Contact email")));
+  assert.deepEqual(validate(parseBody(body({ email: "_No response_" })), [], "new"), []);
   assert.ok(validate(parseBody(body({ icon: "_No response_" })), [], "new").some((e) => e.includes("Icon URL")));
   assert.ok(validate(parseBody(body({ shots: "_No response_" })), [], "new").some((e) => e.includes("screenshot")));
   assert.ok(validate(parseBody(body({ desc: "x".repeat(4001) })), [], "new").some((e) => e.includes("4,000")));

@@ -61,14 +61,6 @@ body:
         https://example.com/shot2.jpg
     validations:
       required: true
-  - type: input
-    id: contact-email
-    attributes:
-      label: Contact email (IMPORTANT — required)
-      description: Update notices for this app go here. The address is scrubbed off this public page.
-      placeholder: you@example.com
-    validations:
-      required: true
   - type: checkboxes
     id: confirm
     attributes:

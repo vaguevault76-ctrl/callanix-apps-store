@@ -217,7 +217,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 <div class="form-group"><label>ICON URL * <span class="imp-tag">IMPORTANT</span></label><input type="url" id="sIcon" placeholder="https://example.com/icon.png"><div class="helper">Required — proves ownership for update / unload requests. Filing will not send without it.</div></div>
 <div class="form-group"><label>SCREENSHOTS — ONE PER LINE, MAX 5 * <span class="imp-tag">IMPORTANT</span></label><textarea id="sShots" placeholder="https://example.com/shot1.jpg" rows="3"></textarea><div class="helper">Required — at least 1 line. Filing will not send without it.</div></div>
 </div>
-<div class="form-group"><label>CONTACT EMAIL * <span class="imp-tag">IMPORTANT</span></label><input type="email" id="sEmail" placeholder="you@example.com"><div class="helper">Required — your private app ID is emailed here and scrubbed off the public ticket. Filing will not send without it.</div></div>
+<div class="form-group"><label>PRIVATE APP ID DELIVERY</label><div class="helper" style="font-size:12.5px;line-height:1.65">No email is collected — zero email leak by design. Your app ID lives only in MY APPS (connected as the submitter). Never paste emails, tokens, or secrets into any filing field.</div></div>
 <h3 style="font-family:'Barlow Condensed',sans-serif;font-size:22px;letter-spacing:.05em;margin:22px 0 4px;">TICKET PREVIEW</h3>
 <div class="helper" style="margin-bottom:12px">Hidden by default — open it to check exactly how the ticket will look on GitHub.</div>
 <button type="button" class="toggle-btn" id="previewToggle"><i class="fas fa-eye"></i> SHOW TICKET PREVIEW</button>
@@ -238,15 +238,15 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,te
 </div>
 
 <div class="panel" id="track">
-<h2><i class="fas fa-radar"></i> Track Filings</h2>
-<div class="sub">ENTER YOUR GITHUB USERNAME TO SEE YOUR QUEUE</div>
+<h2><i class="fas fa-lock"></i> Track Filings</h2>
+<div class="sub">PRIVATE · CONNECTED ACCOUNT ONLY</div>
 <button type="button" class="toggle-btn" id="trackToggle"><i class="fas fa-eye"></i> SHOW TRACK FILINGS</button>
-<div class="collapse-wrap" id="trackWrap"><div style="margin-top:4px"><div class="form-group"><label>GITHUB USERNAME</label>
+<div class="collapse-wrap" id="trackWrap"><div style="margin-top:4px"><div class="form-group"><label>CONNECTED ACCOUNT (LOCKED)</label>
 <div class="id-row">
-<input type="text" id="tUser" placeholder="e.g. octocat" autocomplete="off">
-<button type="button" class="ghost-btn" id="trackBtn"><i class="fas fa-search"></i> LOOK UP</button>
-</div></div>
-<div id="tList"><p class="helper">No lookup yet. Filings appear here with live status chips.</p></div></div></div>
+<input type="text" id="tUser" placeholder="Connect GitHub first" autocomplete="off" readonly>
+<button type="button" class="ghost-btn" id="trackBtn"><i class="fas fa-rotate"></i> REFRESH</button>
+</div><div class="helper">Only your own filings ever appear here. Looking up other devs is disabled — their queue is none of your business.</div></div>
+<div id="tList"><p class="helper">Connect GitHub — your private queue appears here.</p></div></div></div>
 </div>
 
 <div class="panel" id="guide">
@@ -450,7 +450,6 @@ function ticketBody(f) {
     "### Ad gateway URL (optional)", "", link("Open the ad", f.adUrl), "",
     "### Icon URL (optional)", "", link("View the icon", f.icon), "",
     "### Screenshot URLs (optional)", "", shots, "",
-    "### Contact email (optional)", "", $("sEmail").value.trim() || "_No response_", "",
     "### Confirmation", "", "- [X] I have the right to share this app and its links", "",
   ].join("\n");
 }
@@ -466,7 +465,6 @@ function issueUrl(f) {
     "ad-url": f.adUrl,
     "icon-url": f.icon,
     screenshots: f.shots,
-    "contact-email": $("sEmail").value.trim(),
     confirm: "0",
     body: ticketBody(f),
   });
@@ -488,8 +486,7 @@ $("copyBtn").addEventListener("click", async () => {
   const text =
     "Request type: " + f.action + "\nApp ID: " + (f.appId || "-") + "\nApp title: " + f.title +
     "\nCategory: " + f.category + "\nDescription: " + f.desc + "\nApp URL: " + f.url +
-    "\nAd URL: " + (f.adUrl || "-") + "\nIcon URL: " + (f.icon || "-") + "\nScreenshots:\n" + (f.shots || "-") +
-    "\nContact email: " + ($("sEmail").value.trim() || "-");
+    "\nAd URL: " + (f.adUrl || "-") + "\nIcon URL: " + (f.icon || "-") + "\nScreenshots:\n" + (f.shots || "-");
   try {
     await navigator.clipboard.writeText(text);
     showToast("Details copied — paste field by field.", "success");
@@ -563,25 +560,35 @@ function renderRemovedInSettings(removed) {
     box.appendChild(d);
   });
 }
+function redactTrack(t) {
+  let s = String(t || "");
+  s = s.replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, "[email hidden]");
+  s = s.replace(/`?(app-[A-Za-z0-9_-]{4,})`?/g, "app-••••");
+  s = s.replace(/ghp_[A-Za-z0-9]+/g, "[token hidden]");
+  s = s.trim();
+  if (s.length > 140) s = s.slice(0, 140) + "…";
+  return s;
+}
 $("trackBtn").addEventListener("click", async () => {
-  const user = $("tUser").value.trim().toLowerCase();
   const list = $("tList");
-  if (!user) { showToast("Enter a GitHub username.", "error"); return; }
-  list.innerHTML = '<p class="helper">Reading the board…</p>';
+  const tt = getToken();
+  if (!tt) { list.innerHTML = '<p class="helper">Connect GitHub first — your private queue unlocks after connect.</p>'; showToast("Connect GitHub first.", "error"); try { window.openSettings(); } catch {} return; }
+  list.innerHTML = '<p class="helper">Reading your private queue…</p>';
   try {
-    let tt = "";
-    try { tt = localStorage.getItem("callanix_gh_token") || ""; } catch {}
+    let me = "";
+    try { me = (await gh("/user", "GET", null, tt)).login || ""; } catch { showToast("Token invalid — reconnect.", "error"); return; }
+    const user = String(me).toLowerCase();
+    if (!user) throw new Error("api");
+    $("tUser").value = me;
     const liveApps = (await fetchLiveApps()) || [];
-    const liveById = {};
-    liveApps.forEach((a) => { liveById[String(a.id || "").toLowerCase()] = a; });
-    const res = await fetch(API + "/issues?labels=app-submission&state=all&per_page=100", tt ? { headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + tt } } : {});
+    const res = await fetch(API + "/issues?labels=app-submission&state=all&per_page=100", { headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + tt } });
     if (!res.ok) throw new Error("api");
     const issues = await res.json();
     const mine = issues.filter((i) => (i.user?.login || "").toLowerCase() === user && !i.pull_request);
     const removed = mine.filter(isRemovedIssue);
     renderRemovedInSettings(removed);
     const visible = mine.filter((i) => !isRemovedIssue(i));
-    if (!visible.length) { list.innerHTML = removed.length ? '<p class="helper">Only removed filings found — see them in Settings → Removed Apps.</p>' : '<p class="helper">No filings from @' + esc(user) + " yet.</p>"; return; }
+    if (!visible.length) { list.innerHTML = removed.length ? '<p class="helper">Only removed filings found — see them in Settings → Removed Apps.</p>' : '<p class="helper">No filings from @' + esc(me) + " yet.</p>"; return; }
     const ago = (ts) => {
       const s = Math.max(1, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
       if (s < 60) return "just now";
@@ -598,10 +605,7 @@ $("trackBtn").addEventListener("click", async () => {
     list.innerHTML = "";
     for (const i of visible.slice(0, 10)) {
       const [label, cls] = liveStatus(i, liveApps);
-      const me = (i.user && i.user.login) || "";
       const req = reqTypeOf(i);
-      const aid = appIdOfIssue(i).toLowerCase();
-      const live = aid ? liveById[aid] : null;
       const div = document.createElement("div");
       div.className = "sub-item";
       div.innerHTML =
@@ -612,67 +616,41 @@ $("trackBtn").addEventListener("click", async () => {
       list.appendChild(div);
       const thread = document.createElement("div");
       thread.className = "thread";
-      if (label === "EDITED" && live) {
-        const cur = document.createElement("div");
-        cur.className = "msg";
-        cur.innerHTML = '<div class="msg-head"><span class="who bot">LIVE NOW</span>' +
-          '<span class="when">' + esc(live.category || "") + "</span></div>" +
-          '<div class="msg-body"><b>' + esc(live.title || "") + "</b>\n" + esc(String(live.description || "").slice(0, 300)) + "\n" + esc(live.url || "") + "</div>";
-        thread.appendChild(cur);
-        try {
-          const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, getToken());
-          const lastFail = comments.filter((c) => !isBot(c.user && c.user.login)).slice(-1);
-          const lastBot = comments.filter((c) => isBot(c.user && c.user.login)).slice(-1);
-          [...lastBot, ...lastFail].slice(-2).forEach((c) => {
-            if (!c) return;
-            const login = (c.user && c.user.login) || "ghost";
-            const bot = isBot(login);
-            let t = String(c.body || "");
-            if (t.length > 320) t = t.slice(0, 320) + "… (full text on GitHub)";
-            const m = document.createElement("div");
-            m.className = "msg";
-            m.innerHTML = '<div class="msg-head"><span class="who ' + (bot ? "bot" : "dev") + '">' + esc(bot ? "BOT" : "YOU") + "</span>" +
-              '<span class="when" title="' + esc(full(c.created_at)) + '">' + ago(c.created_at) + "</span></div>" +
-              '<div class="msg-body">' + esc(t) + "</div>";
-            thread.appendChild(m);
-          });
-        } catch {}
-      } else {
-        const opener = document.createElement("div");
-        opener.className = "msg";
-        opener.innerHTML = '<div class="msg-head"><span class="who dev">YOU · ' + esc(me) + '</span>' +
-          '<span class="when" title="' + esc(full(i.created_at)) + '">' + ago(i.created_at) + "</span></div>" +
-          '<div class="msg-body">Filed this request from the portal.</div>';
-        thread.appendChild(opener);
-        try {
-          const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, getToken());
-          const show = label === "FAILED" ? comments.slice(-4) : comments.slice(-2);
-          show.forEach((c) => {
-            const login = (c.user && c.user.login) || "ghost";
-            const bot = isBot(login);
-            const who = bot ? "BOT" : (login.toLowerCase() === user ? "YOU" : "@" + login);
-            let t = String(c.body || "").replace(/`?(app-[A-Za-z0-9_-]{4,})`?/g, "app-••••");
-            if (t.length > 320) t = t.slice(0, 320) + "… (full text on GitHub)";
-            const m = document.createElement("div");
-            m.className = "msg";
-            m.innerHTML = '<div class="msg-head"><span class="who ' + (bot ? "bot" : "dev") + '">' + esc(who) + "</span>" +
-              '<span class="when" title="' + esc(full(c.created_at)) + '">' + ago(c.created_at) + "</span></div>" +
-              '<div class="msg-body">' + esc(t) + "</div>";
-            thread.appendChild(m);
-          });
-          if (comments.length > show.length) {
-            const more = document.createElement("div");
-            more.className = "msg-body";
-            more.innerHTML = '<a href="' + i.html_url + '" target="_blank" rel="noopener">+' + (comments.length - show.length) + " older messages on GitHub →</a>";
-            thread.appendChild(more);
-          }
-        } catch {}
-      }
+      const opener = document.createElement("div");
+      opener.className = "msg";
+      opener.innerHTML = '<div class="msg-head"><span class="who dev">YOU</span>' +
+        '<span class="when" title="' + esc(full(i.created_at)) + '">' + ago(i.created_at) + "</span></div>" +
+        '<div class="msg-body">Filed by you. Full details on GitHub.</div>';
+      thread.appendChild(opener);
+      try {
+        const comments = await gh("/repos/" + OWNER + "/" + REPO + "/issues/" + i.number + "/comments", "GET", null, tt);
+        const bots = comments.filter((c) => isBot(c.user && c.user.login));
+        const last = bots.slice(-1)[0];
+        if (last) {
+          const m = document.createElement("div");
+          m.className = "msg";
+          m.innerHTML = '<div class="msg-head"><span class="who bot">BOT</span>' +
+            '<span class="when" title="' + esc(full(last.created_at)) + '">' + ago(last.created_at) + "</span></div>" +
+            '<div class="msg-body">' + esc(redactTrack(last.body)) + ' <a href="' + i.html_url + '" target="_blank" rel="noopener">→</a></div>';
+          thread.appendChild(m);
+        } else {
+          const m = document.createElement("div");
+          m.className = "msg";
+          m.innerHTML = '<div class="msg-body">No bot reply yet — check back in ~5 min.</div>';
+          thread.appendChild(m);
+        }
+        const hidden = Math.max(0, comments.length - (last ? 1 : 0));
+        if (hidden > 0) {
+          const more = document.createElement("div");
+          more.className = "msg-body";
+          more.innerHTML = '<a href="' + i.html_url + '" target="_blank" rel="noopener">+' + hidden + " more on GitHub →</a>";
+          thread.appendChild(more);
+        }
+      } catch {}
       div.appendChild(thread);
     }
   } catch { list.innerHTML = '<p class="helper">Lookup failed — try again in a minute.</p>'; }
 });
-$("tUser").addEventListener("keydown", (e) => { if (e.key === "Enter") $("trackBtn").click(); });
 
 function renderPreview() {
   const f = filing();
@@ -694,7 +672,7 @@ function renderPreview() {
     h += row("Ad gateway URL", optLink("Open the ad", f.adUrl));
     h += row("Icon URL *", !f.icon ? warn("Icon URL required — filing will not send without it.") : optLink("View the icon", f.icon));
     h += row("Screenshots (one per line) *", !shots.length ? warn("At least 1 screenshot required — filing will not send without it.") : '<ol class="pv-ol">' + shots.map((s) => "<li>" + esc(s) + "</li>").join("") + "</ol>");
-    h += row("Contact email *", !$("sEmail").value.trim() ? warn("Contact email required — filing will not send without it.") : esc($("sEmail").value.trim()));
+    h += row("App ID delivery", dim("MY APPS only — no email collected."));
   }
   h += '<div class="pv-sec"><div class="pv-v pv-check"><i class="fas fa-check-square"></i> I have the right to share this app and its links</div></div>';
   $("ticketPreview").innerHTML = '<div class="pv-title">' + esc(f.title || f.appId || "new submission") + "</div>" + h;
@@ -779,7 +757,7 @@ function resetFiling() {
   $("sAdUrl").value = "";
   $("sIcon").value = "";
   $("sShots").value = "";
-  $("sEmail").value = "";
+  try { const _e = $("sEmail"); if (_e) _e.value = ""; } catch {}
   const sp = $("sPick");
   if (sp) sp.innerHTML = '<option value="">Switch to Edit/Delete to load…</option>';
   try { renderPreview(); } catch {}
@@ -818,7 +796,7 @@ $("disconnBtn").addEventListener("click", () => {
   try { localStorage.removeItem(TKEY); localStorage.removeItem(UKEY); } catch {}
   resetFiling();
   $("tUser").value = "";
-  $("tList").innerHTML = '<p class="helper">No lookup yet. Filings appear here with live status chips.</p>';
+  $("tList").innerHTML = '<p class="helper">Connect GitHub — your private queue appears here.</p>';
   $("myList").innerHTML = '<p class="helper">Connect GitHub in Settings — your private area appears here.</p>';
   $("myCount").textContent = "";
   refreshConn();
@@ -840,9 +818,6 @@ function validateFiling(f) {
   if (!shots.length) return "At least 1 screenshot URL is required — one per line.";
   if (shots.length > 5) return "At most 5 screenshots — one per line.";
   if (shots.some((s) => !URL_OK(s))) return "One screenshot line is not a URL.";
-  const em = $("sEmail").value.trim();
-  if (!em) return "Contact email is required — without it the filing will not send.";
-  if (!/^[\w.+-]+@[\w-]+(?:\.[\w-]+)+$/.test(em)) return "Contact email doesn't look valid.";
   return "";
 }
 $("fileBtn").addEventListener("click", async () => {
