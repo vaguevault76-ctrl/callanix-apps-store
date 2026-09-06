@@ -284,9 +284,32 @@ const sAction = $("sAction"), sAppId = $("sAppId"), appIdGroup = $("appIdGroup")
 const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const cleanId = (s) => String(s || "").trim().replace(/^[`'"]+|[`'"]+$/g, "").trim();
 async function fetchLiveApps() {
+  for (const u of ["../data/links.json", "data/links.json", "./data/links.json"]) {
+    try {
+      const res = await fetch(u + "?t=" + Date.now(), { cache: "no-store" });
+      if (res.ok) {
+        const j = await res.json();
+        if (Array.isArray(j)) return j;
+      }
+    } catch (e) {}
+  }
+  try {
+    let tt = "";
+    try { tt = localStorage.getItem("callanix_gh_token") || ""; } catch {}
+    for (const br of ["main", "master"]) {
+      try {
+        const res = await fetch(API + "/contents/data/links.json?ref=" + br + "&t=" + Date.now(), tt ? { headers: { Accept: "application/vnd.github+json", Authorization: "Bearer " + tt } } : {});
+        if (res.ok) {
+          const j = await res.json();
+          const arr = JSON.parse(atob(String(j.content || "").replace(/\n/g, "")));
+          if (Array.isArray(arr)) return arr;
+        }
+      } catch (e) {}
+    }
+  } catch (e) {}
   for (const br of ["main", "master"]) {
     try {
-      const res = await fetch("https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + br + "/data/links.json?t=" + Date.now());
+      const res = await fetch("https://raw.githubusercontent.com/" + OWNER + "/" + REPO + "/" + br + "/data/links.json?t=" + Date.now(), { cache: "no-store" });
       if (res.ok) {
         const j = await res.json();
         if (Array.isArray(j)) return j;
@@ -517,22 +540,23 @@ function isRemovedIssue(issue) {
   return reqTypeOf(issue) === "delete" && (labels.has("published") || issue.state === "closed");
 }
 function isGoneIssue(issue, liveApps, liveById) {
-  const labels = new Set((issue.labels || []).map((l) => l.name));
   if (isRemovedIssue(issue)) return true;
-  const req = reqTypeOf(issue);
+  if (!liveApps) return false;
+  const labels = new Set((issue.labels || []).map((l) => l.name));
+  if (!labels.has("published") && issue.state !== "closed") return false;
+  const ts = Date.parse(issue.updated_at || issue.closed_at || issue.created_at) || 0;
+  if (Date.now() - ts < 20 * 60 * 1000) return false;
+  if (!(liveApps || []).length) return false;
   const id = appIdOfIssue(issue).toLowerCase();
   if (id) {
     if (liveById && liveById[id]) return false;
     if ((liveApps || []).some((a) => String(a.id || "").toLowerCase() === id)) return false;
-    return labels.has("published") || issue.state === "closed";
-  }
-  if (labels.has("published") || issue.state === "closed") {
-    if ((liveApps || []).some((a) => String(a.sourceIssue || "") === String(issue.number))) return false;
-    const t = String(issue.title || "").trim().toLowerCase();
-    if (t && (liveApps || []).some((a) => String(a.title || "").trim().toLowerCase() === t)) return false;
     return true;
   }
-  return false;
+  if ((liveApps || []).some((a) => String(a.sourceIssue || "") === String(issue.number))) return false;
+  const t = String(issue.title || "").trim().toLowerCase();
+  if (t && (liveApps || []).some((a) => String(a.title || "").trim().toLowerCase() === t)) return false;
+  return true;
 }
 function liveStatus(issue, liveApps) {
   const labels = new Set((issue.labels || []).map((l) => l.name));
@@ -547,11 +571,22 @@ function liveStatus(issue, liveApps) {
       return edited ? ["EDITED", "queue"] : ["LIVE", "live"];
     }
     if (req === "delete") return ["REMOVED", "shut"];
-    if (id) return ["REMOVED", "shut"];
+    if (id) {
+      if ((liveApps || []).length) {
+        const ts = Date.parse(issue.updated_at || issue.closed_at || issue.created_at) || 0;
+        if (Date.now() - ts < 20 * 60 * 1000) return ["LIVE", "live"];
+        return ["REMOVED", "shut"];
+      }
+      return ["LIVE", "live"];
+    }
     const t = String(issue.title || "").trim().toLowerCase();
     if (t && (liveApps || []).some((a) => String(a.title || "").trim().toLowerCase() === t)) return ["LIVE", "live"];
     if ((liveApps || []).some((a) => String(a.sourceIssue || "") === String(issue.number))) return ["LIVE", "live"];
-    if ((liveApps || []).length) return ["REMOVED", "shut"];
+    if ((liveApps || []).length) {
+      const ts2 = Date.parse(issue.updated_at || issue.closed_at || issue.created_at) || 0;
+      if (Date.now() - ts2 < 20 * 60 * 1000) return ["LIVE", "live"];
+      return ["REMOVED", "shut"];
+    }
     return ["LIVE", "live"];
   }
   if (live) {
