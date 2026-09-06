@@ -61,8 +61,6 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 .card-category{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--pur2);letter-spacing:.2em;margin-top:4px}
 .card-dev{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.14em;margin-top:4px}
 .card-dev b{color:var(--tea)}
-.modal-dev{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--dim);margin:-8px 0 18px}
-.modal-dev b{color:var(--tea)}
 .card-desc{color:var(--mut);font-size:13.5px;line-height:1.6;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:65ch;overflow-wrap:anywhere;word-break:break-word;white-space:pre-line}
 .card-shots{display:flex;gap:7px;margin-bottom:13px}
 .card-shots img{width:62px;height:78px;border-radius:8px;object-fit:cover;opacity:.85;border:1px solid var(--line)}
@@ -71,23 +69,47 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 .card-btn{padding:9px 20px;border-radius:9px;border:none;background:var(--pur);color:#fff;font-size:12px;font-weight:700;letter-spacing:.08em;cursor:pointer;transition:.22s;font-family:'JetBrains Mono',monospace}
 .card-btn:hover{background:var(--pur2);box-shadow:0 6px 16px rgba(0,0,0,.5)}
 .status-pill{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;padding:4px 10px;border-radius:20px;border:1px solid rgba(0,206,201,.4);color:var(--tea);background:rgba(0,206,201,.08)}
-.modal-overlay{position:fixed;inset:0;background:rgba(4,5,8,.82);backdrop-filter:blur(10px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
-.modal-overlay.show{display:flex}
-.modal{background:linear-gradient(180deg,#161a22,#0c0e12);border:1px solid var(--line);border-radius:20px;max-width:620px;width:100%;max-height:90vh;overflow-y:auto;padding:0;position:relative}
-.modal-slip{padding:30px 30px 28px}
-.modal-route{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--dim);margin-bottom:16px}
-.modal-route b{color:var(--pur2)}
-.modal-header{display:flex;align-items:center;gap:16px;margin-bottom:16px}
-.modal-header img{width:64px;height:64px;border-radius:15px;border:1px solid var(--line)}
-.modal-header h2{font-family:'Barlow Condensed',sans-serif;font-size:32px;letter-spacing:.03em;line-height:1}
-.cat-badge{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--pur2);letter-spacing:.2em}
-.modal-desc{color:var(--mut);font-size:14.5px;line-height:1.7;margin-bottom:18px;max-width:68ch;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}
-.modal-screenshots{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:22px}
-.modal-screenshots img{width:100%;height:110px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:zoom-in;transition:.22s}
-.modal-screenshots img:hover{border-color:var(--pur);transform:scale(1.03)}
-.shot-hint{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.18em;color:var(--dim);margin:-12px 0 20px}
-.shot-hint i{color:var(--pur2);margin-right:6px}
 .card-shots img{cursor:zoom-in}
+.detail{position:fixed;inset:0;z-index:200;background:var(--ink);display:none;overflow-y:auto;overscroll-behavior:contain}
+.detail.show{display:block;animation:pageIn .22s ease}
+@keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.detail-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;padding:12px 20px;background:rgba(8,9,12,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.back-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:#10131a;color:var(--paper);cursor:pointer;font-size:15px;flex-shrink:0;transition:.2s}
+.back-btn:hover{border-color:var(--pur);background:#161a22}
+.detail-top .crumb{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.detail-top .crumb b{color:var(--paper)}
+.detail-top .spacer{flex:1}
+.detail-open{padding:10px 22px;border-radius:99px;border:none;background:var(--pur);color:#fff;font-weight:700;font-size:13px;letter-spacing:.04em;cursor:pointer;white-space:nowrap;font-family:'Inter',sans-serif}
+.detail-open:hover{background:var(--pur2)}
+.detail-wrap{max-width:920px;margin:0 auto;padding:32px 22px 90px}
+.hero{display:flex;gap:20px;align-items:flex-start;margin-bottom:22px}
+.hero img{width:112px;height:112px;border-radius:26px;border:1px solid var(--line);object-fit:cover;background:#0b0d12;flex-shrink:0;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+.hero h1{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.02em;line-height:1.05}
+.hero .dev{color:var(--tea);font-size:14px;font-weight:600;margin-top:6px}
+.hero .sub{color:var(--dim);font-size:13px;margin-top:4px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.pill{font-size:11px;font-weight:700;letter-spacing:.08em;padding:6px 14px;border-radius:99px;background:#141821;border:1px solid var(--line);color:var(--mut)}
+.pill.hot{background:rgba(108,92,231,.15);border-color:rgba(108,92,231,.45);color:var(--pur2)}
+.actions{display:flex;gap:10px;margin:6px 0 28px}
+.install{flex:1;padding:16px;border-radius:14px;border:none;background:var(--pur);color:#fff;font-size:15px;font-weight:800;letter-spacing:.02em;cursor:pointer;transition:.2s}
+.install:hover{background:var(--pur2);transform:translateY(-1px)}
+.share{width:54px;border-radius:14px;border:1px solid var(--line);background:#10131a;color:var(--mut);cursor:pointer;font-size:17px}
+.share:hover{color:#fff;border-color:var(--pur)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:28px;text-align:center}
+.stat b{display:block;font-size:15px;font-weight:800}
+.stat span{font-size:11px;color:var(--dim);letter-spacing:.08em;margin-top:4px;display:block;font-family:'JetBrains Mono',monospace}
+.stat+.stat{border-left:1px solid var(--line)}
+.sec-title{font-size:17px;font-weight:800;margin:0 0 14px;letter-spacing:-.01em}
+.shots{display:flex;gap:12px;overflow-x:auto;padding:2px 2px 16px;scroll-snap-type:x mandatory;margin:0 -22px;padding-left:22px;padding-right:22px;margin-bottom:30px}
+.shots img{height:220px;width:auto;min-width:120px;max-width:78vw;border-radius:14px;border:1px solid var(--line);object-fit:cover;cursor:zoom-in;scroll-snap-align:start;transition:.2s;background:#0b0d12}
+.shots img:hover{border-color:var(--pur)}
+.about{color:#c9cede;font-size:15px;line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;margin-bottom:30px}
+.info{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#0c0e13}
+.info-row{display:flex;justify-content:space-between;gap:16px;padding:14px 18px;font-size:13px;border-bottom:1px solid var(--line)}
+.info-row:last-child{border-bottom:none}
+.info-row .k{color:var(--dim)}
+.info-row .v{color:var(--paper);font-weight:600;text-align:right;overflow-wrap:anywhere}
+@media(max-width:640px){.hero img{width:84px;height:84px;border-radius:20px}.shots img{height:180px}.detail-wrap{padding:22px 16px 70px}.stats{padding:14px 0}.install{padding:15px}}
 .lightbox{position:fixed;inset:0;background:rgba(3,4,6,.96);z-index:400;display:none;align-items:center;justify-content:center;flex-direction:column;padding:22px}
 .lightbox.show{display:flex}
 .lightbox img{max-width:min(1100px,94vw);max-height:78vh;object-fit:contain;border-radius:14px;border:1px solid var(--line);background:#0b0d12}
@@ -99,11 +121,6 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 .lb-nav button{background:#141821;border:1px solid var(--line);color:var(--paper);padding:11px 22px;border-radius:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em}
 .lb-nav button:hover:not(:disabled){border-color:var(--pur)}
 .lb-nav button:disabled{opacity:.35;cursor:default}
-.modal-btn{width:100%;padding:16px;border-radius:13px;border:none;background:var(--pur);color:#fff;font-size:15px;font-weight:700;letter-spacing:.06em;cursor:pointer;font-family:'JetBrains Mono',monospace}
-.modal-btn:hover{background:var(--pur2)}
-.modal-close{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:#0b0d12;color:var(--mut);cursor:pointer;font-size:15px}
-.modal-close:hover{color:#fff;border-color:var(--pur)}
-.perf{border-top:2px dashed var(--line);padding:14px 30px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.2em;color:var(--dim);display:flex;justify-content:space-between}
 .ad-modal{position:fixed;inset:0;background:rgba(4,5,8,.94);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
 .ad-modal.show{display:flex}
 .ad-modal-content{text-align:center;max-width:420px;background:linear-gradient(180deg,#161a22,#0c0e12);border:1px solid var(--line);border-radius:20px;padding:38px 34px}
@@ -164,22 +181,43 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 <div class="empty-state" id="emptyState"><i class="fas fa-box-open"></i><h3>No departures found</h3><p>CANCELLED — TRY ANOTHER DESTINATION</p><p class="why" id="emptyWhy"></p></div>
 <div class="app-grid" id="appGrid"></div>
 </div>
-<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true">
-<div class="modal">
-<div class="modal-slip">
-<div class="modal-route"><span>CONCOURSE U · INSPECTION SLIP</span><b id="modalCategory">OTHER</b></div>
-<button class="modal-close" id="modalClose" aria-label="Close"><i class="fas fa-times"></i></button>
-<div class="modal-header">
-<img id="modalIcon" src="" alt="App icon">
-<div><h2 id="modalTitle">Untitled</h2><span class="cat-badge" id="modalCategory2" style="display:none"></span></div>
+<div class="detail" id="detailPage" role="dialog" aria-modal="true" aria-label="App details">
+<div class="detail-top">
+<button class="back-btn" id="detailBack" aria-label="Back to store"><i class="fas fa-arrow-left"></i></button>
+<div class="crumb"><b id="crumbTitle">APP</b> · CALLANIX STORE</div>
+<div class="spacer"></div>
+<button class="detail-open" id="detailTopBtn">Get</button>
 </div>
-<div class="modal-dev">FILED BY <b id="modalDev">@–</b></div>
-<p class="modal-desc" id="modalDesc"></p>
-<div class="modal-screenshots" id="modalScreenshots"></div>
-<div class="shot-hint"><i class="fas fa-expand"></i>TAP ANY SHOT FOR FULL SCREEN</div>
-<button class="modal-btn" id="modalBtn"><i class="fas fa-download"></i>&nbsp;BOARD — VISIT APP</button>
+<div class="detail-wrap">
+<div class="hero">
+<img id="detailIcon" src="" alt="App icon">
+<div style="min-width:0">
+<h1 id="detailTitle">Untitled</h1>
+<div class="dev" id="detailDev">@callanix</div>
+<div class="sub" id="detailSub">Verified listing</div>
+<div class="pills"><span class="pill hot" id="detailCat">OTHER</span><span class="pill">Verified</span><span class="pill" id="detailDate">2026</span></div>
 </div>
-<div class="perf"><span>VERIFY → BOARD</span><span>CONCOURSE U</span></div>
+</div>
+<div class="actions">
+<button class="install" id="detailInstall"><i class="fas fa-download"></i>&nbsp; Install</button>
+<button class="share" id="detailShare" aria-label="Share"><i class="fas fa-share-nodes"></i></button>
+</div>
+<div class="stats">
+<div class="stat"><b id="statCat">–</b><span>CATEGORY</span></div>
+<div class="stat"><b>Verified</b><span>SAFETY</span></div>
+<div class="stat"><b id="statDate">–</b><span>UPDATED</span></div>
+</div>
+<h2 class="sec-title">Preview</h2>
+<div class="shots" id="detailShots"></div>
+<h2 class="sec-title">About this app</h2>
+<p class="about" id="detailDesc"></p>
+<h2 class="sec-title">Information</h2>
+<div class="info">
+<div class="info-row"><span class="k">Developer</span><span class="v" id="infoDev">–</span></div>
+<div class="info-row"><span class="k">Category</span><span class="v" id="infoCat">–</span></div>
+<div class="info-row"><span class="k">Updated on</span><span class="v" id="infoDate">–</span></div>
+<div class="info-row"><span class="k">Source</span><span class="v">Callanix Store · Verified link</span></div>
+</div>
 </div>
 </div>
 <div class="ad-modal" id="adModal" role="dialog" aria-modal="true">
@@ -214,14 +252,19 @@ const emptyWhy = document.getElementById('emptyWhy');
 const searchInput = document.getElementById('searchInput');
 const clearBtn = document.getElementById('clearBtn');
 const categories = document.getElementById('categories');
-const modalOverlay = document.getElementById('modalOverlay');
-const modalIcon = document.getElementById('modalIcon');
-const modalTitle = document.getElementById('modalTitle');
-const modalCategory = document.getElementById('modalCategory');
-const modalDesc = document.getElementById('modalDesc');
-const modalScreenshots = document.getElementById('modalScreenshots');
-const modalBtn = document.getElementById('modalBtn');
-const modalClose = document.getElementById('modalClose');
+const detailPage = document.getElementById('detailPage');
+const detailIcon = document.getElementById('detailIcon');
+const detailTitle = document.getElementById('detailTitle');
+const detailDev = document.getElementById('detailDev');
+const detailSub = document.getElementById('detailSub');
+const detailCat = document.getElementById('detailCat');
+const detailDate = document.getElementById('detailDate');
+const detailDesc = document.getElementById('detailDesc');
+const detailShots = document.getElementById('detailShots');
+const detailInstall = document.getElementById('detailInstall');
+const detailTopBtn = document.getElementById('detailTopBtn');
+const detailBack = document.getElementById('detailBack');
+const detailShare = document.getElementById('detailShare');
 const navCount = document.getElementById('navCount').querySelector('span');
 const liveCount = document.getElementById('liveCount');
 const adModal = document.getElementById('adModal');
@@ -259,6 +302,7 @@ if (Array.isArray(data)) { apps = data; if (apps.length) break; }
 } catch(e) {}
 }
 loading.classList.remove('show');renderCategories();applyFilters('all','');
+if(location.hash){ const hit=apps.find(a=>('#'+a.id)===location.hash); if(hit) openDetail(hit); }
 if (!apps.length && !searchInput.value) {
 emptyWhy.style.display = 'block';
 emptyWhy.textContent = reached ? 'STORE FILE EMPTY — NOTHING PUBLISHED YET' : 'STORE FILE UNREACHABLE — CHECK CONNECTION, THEN HARD-REFRESH';
@@ -310,28 +354,42 @@ card.innerHTML =
 '<div><div class="card-code">FLAP ' + String(i+1).padStart(2,'0') + ' · U·HALL</div><div class="card-title">'+escH(app.title||'Untitled').toUpperCase()+'</div><div class="card-category">'+escH(app.category||'other').toUpperCase()+'</div><div class="card-dev">BY <b>@'+dev+'</b></div></div></div>'+
 '<div class="card-desc">'+escH(app.description||'No description available.')+'</div>'+shots+
 '<div class="card-footer"><span class="card-time">'+(app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'NO DATE')+' · <span class="status-pill">ON TIME</span></span><button class="card-btn">OPEN</button></div>';
-card.querySelector('.card-btn').addEventListener('click', (e) => { e.stopPropagation();openModal(app); });
+card.querySelector('.card-btn').addEventListener('click', (e) => { e.stopPropagation();openDetail(app); });
 card.querySelectorAll('.card-shots img').forEach(img => { img.addEventListener('click', (e) => { e.stopPropagation();openLightbox(shotUrls, parseInt(img.dataset.full||'0',10)); }); });
-card.addEventListener('click', () => openModal(app));grid.appendChild(card);
+card.addEventListener('click', () => openDetail(app));grid.appendChild(card);
 });
 }
-function openModal(app) {
+function fmtDate(iso){ try{ const d=new Date(iso); if(isNaN(d)) return '–'; return d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});}catch(e){return '–';} }
+function openDetail(app) {
 currentApp = app;
-modalIcon.src = safeUrl(app.iconUrl) || 'https://via.placeholder.com/64/6c5ce7/ffffff?text=A';
-modalIcon.onerror = function(){ this.src='https://via.placeholder.com/64/6c5ce7/ffffff?text=?'; };
-modalTitle.textContent = (app.title || 'Untitled').toUpperCase();
-modalCategory.textContent = (app.category||'other').toUpperCase();
-document.getElementById('modalDev').textContent = '@' + String(app.submittedBy || 'callanix').replace(/[^a-z0-9-]/gi, '').toLowerCase();
-modalDesc.textContent = app.description || 'No description available.';
-modalScreenshots.innerHTML = '';
-const modalShots = Array.isArray(app.screenshots) ? app.screenshots.map(safeUrl).filter(Boolean).slice(0,20) : [];
-if (modalShots.length) {
-modalShots.forEach((s, si) => { const img = document.createElement('img');img.src = s;img.loading = 'lazy';img.alt = 'Screenshot '+(si+1);img.onerror = function(){ this.style.display='none'; };img.addEventListener('click', () => openLightbox(modalShots, si));modalScreenshots.appendChild(img); });
-} else { modalScreenshots.innerHTML = '<p style="color:var(--dim);font-size:13px;">No screenshots on this slip.</p>'; }
-modalOverlay.classList.add('show');document.body.style.overflow = 'hidden';
+const dev = '@' + String(app.submittedBy || 'callanix').replace(/[^a-z0-9-]/gi, '').toLowerCase();
+const cat = (app.category||'other').toUpperCase();
+const dt = app.createdAt ? fmtDate(app.createdAt) : '–';
+detailIcon.src = safeUrl(app.iconUrl) || 'https://via.placeholder.com/112/6c5ce7/ffffff?text=A';
+detailIcon.onerror = function(){ this.src='https://via.placeholder.com/112/6c5ce7/ffffff?text=?'; };
+detailTitle.textContent = app.title || 'Untitled';
+document.getElementById('crumbTitle').textContent = (app.title||'APP').toUpperCase().slice(0,24);
+detailDev.textContent = dev;
+detailSub.textContent = 'Verified listing · Updated ' + dt;
+detailCat.textContent = cat;
+detailDate.textContent = dt;
+document.getElementById('statCat').textContent = cat.slice(0,12);
+document.getElementById('statDate').textContent = dt;
+document.getElementById('infoDev').textContent = dev;
+document.getElementById('infoCat').textContent = cat;
+document.getElementById('infoDate').textContent = dt;
+detailDesc.textContent = app.description || 'No description available.';
+detailShots.innerHTML = '';
+const shots = Array.isArray(app.screenshots) ? app.screenshots.map(safeUrl).filter(Boolean).slice(0,20) : [];
+if (shots.length) {
+shots.forEach((s, si) => { const img = document.createElement('img');img.src = s;img.loading = 'lazy';img.alt = 'Screenshot '+(si+1);img.onerror = function(){ this.style.display='none'; };img.addEventListener('click', () => openLightbox(shots, si));detailShots.appendChild(img); });
+} else { detailShots.innerHTML = '<p style="color:var(--dim);font-size:13px;">No previews yet.</p>'; }
+detailPage.classList.add('show');detailPage.scrollTop = 0;document.body.style.overflow = 'hidden';
+try{ history.pushState({app: app.id}, '', '#' + app.id); }catch(e){}
 }
-modalClose.addEventListener('click', () => { modalOverlay.classList.remove('show');document.body.style.overflow = ''; });
-modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) { modalOverlay.classList.remove('show');document.body.style.overflow = ''; } });
+function closeDetail(){ detailPage.classList.remove('show');document.body.style.overflow=''; try{ if(location.hash) history.pushState({},'',location.pathname+location.search); }catch(e){} }
+detailBack.addEventListener('click', closeDetail);
+window.addEventListener('popstate', () => { if(detailPage.classList.contains('show')) closeDetail(); });
 function openLightbox(list, idx) {
 if (!list || !list.length) return;
 lbList = list;lbIndex = Math.max(0, Math.min(idx||0, list.length-1));
@@ -342,7 +400,7 @@ lbImg.src = lbList[lbIndex];
 lbCount.textContent = 'SHOT ' + (lbIndex+1) + ' / ' + lbList.length;
 lbPrev.disabled = lbIndex === 0;lbNext.disabled = lbIndex === lbList.length-1;
 }
-function closeLightbox() { lightbox.classList.remove('show');if(!modalOverlay.classList.contains('show'))document.body.style.overflow=''; }
+function closeLightbox() { lightbox.classList.remove('show');if(!detailPage.classList.contains('show'))document.body.style.overflow=''; }
 lbClose.addEventListener('click', closeLightbox);
 lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
 lbPrev.addEventListener('click', (e) => { e.stopPropagation();if(lbIndex>0){lbIndex--;renderLightbox();} });
@@ -355,12 +413,21 @@ if(e.key==='ArrowLeft'&&lbIndex>0){lbIndex--;renderLightbox();}
 if(e.key==='ArrowRight'&&lbIndex<lbList.length-1){lbIndex++;renderLightbox();}
 return;
 }
-if(e.key==='Escape'){modalOverlay.classList.remove('show');adModal.classList.remove('show');document.body.style.overflow='';}
+if(e.key==='Escape'){closeLightbox();closeDetail();adModal.classList.remove('show');document.body.style.overflow='';}
 });
-modalBtn.addEventListener('click', () => {
-modalOverlay.classList.remove('show');document.body.style.overflow = '';
+function goInstall(){
 if (!currentApp) return;
 if (currentApp.adUrl) { showAdGateway(currentApp); } else { openOut(currentApp.url); }
+}
+detailInstall.addEventListener('click', goInstall);
+detailTopBtn.addEventListener('click', goInstall);
+detailShare.addEventListener('click', async () => {
+if (!currentApp) return;
+const shareUrl = location.origin + location.pathname + '#' + (currentApp.id||'');
+try{
+if(navigator.share){ await navigator.share({title: currentApp.title, text: currentApp.description||'', url: shareUrl}); }
+else{ await navigator.clipboard.writeText(shareUrl); detailShare.innerHTML='<i class="fas fa-check"></i>'; setTimeout(()=>detailShare.innerHTML='<i class="fas fa-share-nodes"></i>',1500); }
+}catch(e){}
 });
 function showAdGateway(app) {
 adModal.classList.add('show');
