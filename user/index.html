@@ -90,6 +90,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 .pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .pill{font-size:11px;font-weight:700;letter-spacing:.08em;padding:6px 14px;border-radius:99px;background:#141821;border:1px solid var(--line);color:var(--mut)}
 .pill.hot{background:rgba(108,92,231,.15);border-color:rgba(108,92,231,.45);color:var(--pur2)}
+.pill.status{background:rgba(0,206,201,.1);border-color:rgba(0,206,201,.45);color:var(--tea)}
 .actions{display:flex;gap:10px;margin:6px 0 28px}
 .install{flex:1;padding:16px;border-radius:14px;border:none;background:var(--pur);color:#fff;font-size:15px;font-weight:800;letter-spacing:.02em;cursor:pointer;transition:.2s}
 .install:hover{background:var(--pur2);transform:translateY(-1px)}
@@ -109,7 +110,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 .info-row:last-child{border-bottom:none}
 .info-row .k{color:var(--dim)}
 .info-row .v{color:var(--paper);font-weight:600;text-align:right;overflow-wrap:anywhere}
-@media(max-width:640px){.hero img{width:84px;height:84px;border-radius:20px}.shots img{height:180px}.detail-wrap{padding:22px 16px 70px}.stats{padding:14px 0}.install{padding:15px}}
+@media(max-width:640px){.hero img{width:84px;height:84px;border-radius:20px}.shots img{height:180px}.detail-wrap{padding:22px 16px 70px}.stats{padding:14px 0}.install{padding:15px}.detail-top{padding:10px 14px;gap:10px}.detail-open{padding:9px 18px}.hero{flex-direction:row;margin-bottom:18px}}
 .lightbox{position:fixed;inset:0;background:rgba(3,4,6,.96);z-index:400;display:none;align-items:center;justify-content:center;flex-direction:column;padding:22px}
 .lightbox.show{display:flex}
 .lightbox img{max-width:min(1100px,94vw);max-height:78vh;object-fit:contain;border-radius:14px;border:1px solid var(--line);background:#0b0d12}
@@ -195,7 +196,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 <h1 id="detailTitle">Untitled</h1>
 <div class="dev" id="detailDev">@callanix</div>
 <div class="sub" id="detailSub">Verified listing</div>
-<div class="pills"><span class="pill hot" id="detailCat">OTHER</span><span class="pill">Verified</span><span class="pill" id="detailDate">2026</span></div>
+<div class="pills"><span class="pill hot" id="detailCat">OTHER</span><span class="pill status" id="detailStatus">● ON TIME</span><span class="pill" id="detailDate">2026</span></div>
 </div>
 </div>
 <div class="actions">
@@ -302,7 +303,7 @@ if (Array.isArray(data)) { apps = data; if (apps.length) break; }
 } catch(e) {}
 }
 loading.classList.remove('show');renderCategories();applyFilters('all','');
-if(location.hash){ const hit=apps.find(a=>('#'+a.id)===location.hash); if(hit) openDetail(hit); }
+if(location.hash){ const hit=apps.find(a=>('#'+a.id)===location.hash); if(hit) openDetail(hit, {skipPush:true}); }
 if (!apps.length && !searchInput.value) {
 emptyWhy.style.display = 'block';
 emptyWhy.textContent = reached ? 'STORE FILE EMPTY — NOTHING PUBLISHED YET' : 'STORE FILE UNREACHABLE — CHECK CONNECTION, THEN HARD-REFRESH';
@@ -360,7 +361,8 @@ card.addEventListener('click', () => openDetail(app));grid.appendChild(card);
 });
 }
 function fmtDate(iso){ try{ const d=new Date(iso); if(isNaN(d)) return '–'; return d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});}catch(e){return '–';} }
-function openDetail(app) {
+function openDetail(app, opts) {
+opts = opts || {};
 currentApp = app;
 const dev = '@' + String(app.submittedBy || 'callanix').replace(/[^a-z0-9-]/gi, '').toLowerCase();
 const cat = (app.category||'other').toUpperCase();
@@ -385,11 +387,15 @@ if (shots.length) {
 shots.forEach((s, si) => { const img = document.createElement('img');img.src = s;img.loading = 'lazy';img.alt = 'Screenshot '+(si+1);img.onerror = function(){ this.style.display='none'; };img.addEventListener('click', () => openLightbox(shots, si));detailShots.appendChild(img); });
 } else { detailShots.innerHTML = '<p style="color:var(--dim);font-size:13px;">No previews yet.</p>'; }
 detailPage.classList.add('show');detailPage.scrollTop = 0;document.body.style.overflow = 'hidden';
-try{ history.pushState({app: app.id}, '', '#' + app.id); }catch(e){}
+if(!opts.skipPush){ try{ const h='#'+app.id; if(location.hash!==h) history.pushState({app: app.id}, '', h); }catch(e){} }
+detailBack.focus({preventScroll:true});
 }
-function closeDetail(){ detailPage.classList.remove('show');document.body.style.overflow=''; try{ if(location.hash) history.pushState({},'',location.pathname+location.search); }catch(e){} }
-detailBack.addEventListener('click', closeDetail);
-window.addEventListener('popstate', () => { if(detailPage.classList.contains('show')) closeDetail(); });
+function closeDetail(fromPop){
+detailPage.classList.remove('show');document.body.style.overflow='';
+if(!fromPop){ try{ if(location.hash) history.pushState({},'',location.pathname+location.search); }catch(e){} }
+}
+detailBack.addEventListener('click', () => { if(location.hash){ history.back(); } else { closeDetail(false); } });
+window.addEventListener('popstate', () => { if(detailPage.classList.contains('show') && !location.hash) closeDetail(true); });
 function openLightbox(list, idx) {
 if (!list || !list.length) return;
 lbList = list;lbIndex = Math.max(0, Math.min(idx||0, list.length-1));

@@ -583,15 +583,55 @@ function buildGone(tombs) {
   });
   return { byId, bySource };
 }
-function isGoneIssue(issue, gone) {
+function hiddenKey(user) { return "callanix_removed_hidden_" + String(user || "").toLowerCase(); }
+function getHiddenRemoved(user) {
+  try { return new Set(JSON.parse(localStorage.getItem(hiddenKey(user)) || "[]")); }
+  catch { return new Set(); }
+}
+function hideRemovedEntry(user, key) {
+  try {
+    const s = getHiddenRemoved(user);
+    s.add(key);
+    localStorage.setItem(hiddenKey(user), JSON.stringify([...s].slice(0, 200)));
+  } catch {}
+}
+function removedEntryKey(e) {
+  const id = String(e.id || "").toLowerCase();
+  if (id && id !== "removed") return "id:" + id;
+  return "t:" + String(e.title || "").trim().toLowerCase();
+}
+function deleteEvidence(mine, tombs) {
+  const ids = new Set(), titles = new Set();
+  (tombs || []).forEach((r) => {
+    const id = String(r.id || "").toLowerCase();
+    if (id) ids.add(id);
+    const t = String(r.title || "").trim().toLowerCase();
+    if (t) titles.add(t);
+  });
+  (mine || []).filter(isRemovedIssue).forEach((i) => {
+    const id = appIdOfIssue(i).toLowerCase();
+    if (id) ids.add(id);
+    const t = String(i.title || "").trim().toLowerCase();
+    if (t) titles.add(t);
+  });
+  return { ids, titles };
+}
+function isGoneIssue(issue, ctx) {
   if (isRemovedIssue(issue)) return true;
-  if (!gone) return false;
+  if (!ctx) return false;
   const id = appIdOfIssue(issue).toLowerCase();
-  if (id && gone.byId[id]) return true;
-  if (gone.bySource[String(issue.number)]) return true;
+  if (id && (ctx.gone.byId[id] || ctx.ev.ids.has(id))) return true;
+  if (ctx.gone.bySource[String(issue.number)]) return true;
+  const labels = new Set((issue.labels || []).map((l) => l.name));
+  if (!labels.has("published") && issue.state !== "closed") return false;
+  if (reqTypeOf(issue) === "delete") return true;
+  if (!id) {
+    const t = String(issue.title || "").trim().toLowerCase();
+    if (t && ctx.ev.titles.has(t) && !ctx.liveTitles.has(t)) return true;
+  }
   return false;
 }
-function liveStatus(issue, liveApps, gone) {
+function liveStatus(issue, liveApps, ctx) {
   const labels = new Set((issue.labels || []).map((l) => l.name));
   if (labels.has("needs-fix")) return ["FAILED", "fix"];
   if (issue.state === "closed" && !labels.has("published")) return ["FAILED", "fix"];
@@ -599,12 +639,16 @@ function liveStatus(issue, liveApps, gone) {
   const live = id ? (liveApps || []).find((a) => String(a.id || "").toLowerCase() === id) : null;
   const req = reqTypeOf(issue);
   if (labels.has("published")) {
+    if (req === "delete") return ["REMOVED", "shut"];
     if (live) {
       const edited = (live.updatedAt && live.createdAt && live.updatedAt !== live.createdAt) || req === "edit";
       return edited ? ["EDITED", "queue"] : ["LIVE", "live"];
     }
-    if (gone && ((id && gone.byId[id]) || gone.bySource[String(issue.number)])) return ["REMOVED", "shut"];
-    if (req === "delete") return ["REMOVED", "shut"];
+    if (ctx && ((id && (ctx.gone.byId[id] || ctx.ev.ids.has(id))) || ctx.gone.bySource[String(issue.number)])) return ["REMOVED", "shut"];
+    if (!id && ctx) {
+      const t = String(issue.title || "").trim().toLowerCase();
+      if (t && ctx.ev.titles.has(t) && !ctx.liveTitles.has(t)) return ["REMOVED", "shut"];
+    }
     if (id) return ["EDITED", "queue"];
     return ["LIVE", "live"];
   }
@@ -619,30 +663,47 @@ function statusOf(issue) {
   return liveStatus(issue, [], null);
 }
 
-function renderRemovedInSettings(entries) {
+function renderRemovedInSettings(entries, user) {
   const slot = $("settingsRemovedSlot");
   if (!slot) return;
-  const seen = new Set();
-  const list = [];
+  const seen = new Set(), titleSeen = new Set(), list = [];
   (entries || []).forEach((e) => {
-    const key = String(e.id || e.title || "").toLowerCase();
+    const key = removedEntryKey(e);
     if (!key || seen.has(key)) return;
+    const t = String(e.title || "").trim().toLowerCase();
+    if (t && titleSeen.has(t)) return;
     seen.add(key);
+    if (t) titleSeen.add(t);
     list.push(e);
   });
-  if (!list.length) {
+  const hidden = getHiddenRemoved(user);
+  const shown = list.filter((e) => !hidden.has(removedEntryKey(e)));
+  if (!shown.length) {
     slot.innerHTML = '<div class="panel" style="margin:0"><h2><i class="fas fa-trash"></i> Removed Apps</h2><div class="sub">NOTHING REMOVED YET</div><p class="helper">Delete filings that are done land here — never in Track Filings.</p></div>';
     return;
   }
-  slot.innerHTML = '<div class="panel" style="margin:0"><h2><i class="fas fa-trash"></i> Removed Apps</h2><div class="sub">' + list.length + ' REMOVED · HIDDEN FROM TRACK</div><div id="removedList"></div></div>';
+  slot.innerHTML = '<div class="panel" style="margin:0"><h2><i class="fas fa-trash"></i> Removed Apps</h2><div class="sub">' + shown.length + ' REMOVED · HIDDEN FROM TRACK</div><div class="helper" style="margin-bottom:12px">HIDE removes the message permanently on this device — it will never show again.</div><div class="actions" style="margin-bottom:12px"><button class="mini-btn danger" id="clearRemovedBtn"><i class="fas fa-eye-slash"></i> HIDE ALL</button></div><div id="removedList"></div></div>';
   const box = slot.querySelector("#removedList");
-  list.forEach((e) => {
+  shown.forEach((e) => {
+    const key = removedEntryKey(e);
     const d = document.createElement("div");
     d.className = "sub-item";
     d.innerHTML = '<div class="sub-row"><div class="info"><div class="name"><a href="' + e.url + '" target="_blank" rel="noopener">' +
       esc(e.title || "(untitled)") + '</a></div><div class="meta">' + esc(e.id || "removed") + "</div></div>" +
-      '<span class="chip shut">REMOVED</span></div>';
+      '<span class="chip shut">REMOVED</span></div>' +
+      '<div class="sub-row" style="gap:8px"><button class="mini-btn danger" data-hide="' + esc(key) + '"><i class="fas fa-eye-slash"></i> HIDE</button></div>';
     box.appendChild(d);
+  });
+  box.querySelectorAll("[data-hide]").forEach((b) => b.addEventListener("click", () => {
+    hideRemovedEntry(user, b.getAttribute("data-hide"));
+    renderRemovedInSettings(entries, user);
+    showToast("Hidden permanently on this device.", "info");
+  }));
+  const clearBtn = slot.querySelector("#clearRemovedBtn");
+  if (clearBtn) clearBtn.addEventListener("click", () => {
+    shown.forEach((e) => hideRemovedEntry(user, removedEntryKey(e)));
+    renderRemovedInSettings(entries, user);
+    showToast("All removed messages hidden permanently.", "info");
   });
 }
 function redactTrack(t) {
@@ -673,6 +734,15 @@ $("trackBtn").addEventListener("click", async () => {
     const tombs = (await fetchRemoved()) || [];
     const ownTombs = tombs.filter((r) => String(r.submittedBy || "").toLowerCase() === user);
     const gone = buildGone(tombs);
+    const ev = deleteEvidence(mine, tombs);
+    const liveTitles = new Set();
+    liveApps.forEach((a) => {
+      if (String(a.submittedBy || "").toLowerCase() === user) {
+        const t = String(a.title || "").trim().toLowerCase();
+        if (t) liveTitles.add(t);
+      }
+    });
+    const ctx = { gone, ev, liveTitles };
     const entries = [];
     ownTombs.forEach((r) => {
       entries.push({
@@ -682,13 +752,12 @@ $("trackBtn").addEventListener("click", async () => {
       });
     });
     mine.filter(isRemovedIssue).forEach((i) => {
-      const id = appIdOfIssue(i);
-      if (id && gone.byId[id.toLowerCase()]) return;
-      entries.push({ id: id || "removed", title: i.title || "(untitled)", url: i.html_url });
+      entries.push({ id: appIdOfIssue(i) || "removed", title: i.title || "(untitled)", url: i.html_url });
     });
-    renderRemovedInSettings(entries);
-    const removedCount = entries.length;
-    const visible = mine.filter((i) => !isGoneIssue(i, gone));
+    renderRemovedInSettings(entries, user);
+    const hidden = getHiddenRemoved(user);
+    const removedCount = entries.filter((e) => !hidden.has(removedEntryKey(e))).length;
+    const visible = mine.filter((i) => !isGoneIssue(i, ctx));
     if (!visible.length) { list.innerHTML = removedCount ? '<p class="helper">Only removed filings found — see them in Settings → Removed Apps.</p>' : '<p class="helper">No filings from @' + esc(me) + " yet.</p>"; return; }
     const ago = (ts) => {
       const s = Math.max(1, Math.floor((Date.now() - new Date(ts).getTime()) / 1000));
@@ -704,9 +773,8 @@ $("trackBtn").addEventListener("click", async () => {
     const full = (ts) => { try { return new Date(ts).toLocaleString(); } catch { return ""; } };
     const isBot = (login) => /\[bot\]$/i.test(login || "");
     list.innerHTML = "";
-    const goneForStatus = gone;
     for (const i of visible.slice(0, 10)) {
-      const [label, cls] = liveStatus(i, liveApps, goneForStatus);
+      const [label, cls] = liveStatus(i, liveApps, ctx);
       if (label === "REMOVED") continue;
       const req = reqTypeOf(i);
       const div = document.createElement("div");
